@@ -1,15 +1,15 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- ✦  R O O M F O R G E   A I  —  README                    -->
+<!-- ✦  D R E A M S P A C E   A I  —  README                    -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 
 <div align="center">
 
   <!-- Logo -->
-  <img src="assets/logo.png" alt="RoomForge AI" width="100" />
+  <img src="assets/logo.png" alt="DreamSpace AI" width="100" />
 
   <!-- Animated Typing Title -->
   <a href="#">
-    <img src="https://readme-typing-svg.demolab.com?font=Playfair+Display&weight=600&size=42&duration=3000&pause=1500&color=6B7F5E&center=true&vCenter=true&multiline=true&width=600&height=80&lines=RoomForge+AI" alt="RoomForge AI" />
+    <img src="https://readme-typing-svg.demolab.com?font=Playfair+Display&weight=600&size=42&duration=3000&pause=1500&color=6B7F5E&center=true&vCenter=true&multiline=true&width=600&height=80&lines=DreamSpace+AI" alt="DreamSpace AI" />
   </a>
 
   <br/>
