@@ -39,10 +39,7 @@
 
   <br/><br/>
 
-  <!-- Banner -->
-  <img src="assets/banner.png" alt="RoomForge AI — Before & After" width="100%" style="border-radius: 12px;" />
-
-</div>
+  </div>
 
 <br/>
 
