@@ -1,0 +1,9 @@
+# 1. Install dependencies (one-time)
+cd /Users/athrvsharma/RoomDecor/server && npm install
+cd /Users/athrvsharma/RoomDecor/client && npm install
+
+# 2. Start the backend (Terminal 1)
+cd /Users/athrvsharma/RoomDecor/server && node src/index.js
+
+# 3. Start the frontend (Terminal 2)
+cd /Users/athrvsharma/RoomDecor/client && npx vite
