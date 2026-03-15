@@ -1,0 +1,73 @@
+import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/index.js';
+import { authenticate } from '../middleware/auth.js';
+
+const router = Router();
+
+router.post('/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) {
+            return res.status(400).json({ error: 'Name, email, and password are required.' });
+        }
+        const existing = await User.findOne({ where: { email } });
+        if (existing) return res.status(409).json({ error: 'Email already registered.' });
+
+        const passwordHash = await bcrypt.hash(password, 12);
+        const user = await User.create({ name, email, passwordHash });
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
+        res.status(201).json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan, credits: user.credits },
+        });
+    } catch (err) {
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
+
+        const user = await User.findOne({ where: { email } });
+        if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) return res.status(401).json({ error: 'Invalid credentials.' });
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
+        res.json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan, credits: user.credits },
+        });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, {
+            attributes: ['id', 'name', 'email', 'role', 'plan', 'credits'],
+        });
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+        res.json({ user });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+export default router;
