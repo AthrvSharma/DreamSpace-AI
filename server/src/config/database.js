@@ -1,14 +1,24 @@
 import { Sequelize } from 'sequelize';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '..', '..', 'roomforge.db'),
-  logging: false,
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'dreamspace',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || 'Athrv@200611',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 3306,
+    dialect: process.env.DB_DIALECT || 'mysql',
+    logging: false, // Set to console.log to see SQL queries
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+  }
+);
 
 export default sequelize;

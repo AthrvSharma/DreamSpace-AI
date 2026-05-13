@@ -27,6 +27,16 @@ router.post('/:roomId/redesign', authenticate, checkCredits, async (req, res) =>
         req.userRecord.credits -= 1;
         await req.userRecord.save();
 
+        const { CreditHistory } = await import('../models/index.js');
+        await CreditHistory.create({
+            userId: req.userRecord.id,
+            type: 'usage',
+            amount: -1,
+            balance: req.userRecord.credits,
+            description: `AI redesign: ${style} style`,
+            referenceId: redesign.id,
+        });
+
         res.status(201).json({ redesign, creditsRemaining: req.userRecord.credits, method: result.method });
     } catch (err) {
         console.error('Redesign error:', err);

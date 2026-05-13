@@ -27,17 +27,8 @@ export const checkCredits = async (req, res, next) => {
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found.' });
 
-    // Reset daily credits for free users
-    const now = new Date();
-    const lastReset = new Date(user.lastCreditReset);
-    if (now.toDateString() !== lastReset.toDateString()) {
-        user.credits = user.plan === 'free' ? 5 : 50;
-        user.lastCreditReset = now;
-        await user.save();
-    }
-
     if (user.credits <= 0) {
-        return res.status(429).json({ error: 'No credits remaining. Upgrade to Pro or wait for daily reset.' });
+        return res.status(429).json({ error: 'No credits remaining. Please purchase more credits.' });
     }
     req.userRecord = user;
     next();
