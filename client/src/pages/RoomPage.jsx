@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 import useToastStore from '../store/toastStore';
-import { roomsAPI, redesignAPI } from '../api/client';
-import { Send, Wand2, Sparkles, ArrowLeft, Image, Layers, Clock, ChevronDown } from 'lucide-react';
+import useAuthStore from '../store/authStore';
+import { roomsAPI, redesignAPI, geminiAPI, exportAPI } from '../api/client';
+import { Send, Wand2, Sparkles, ArrowLeft, Image, Layers, Clock, ChevronDown, Download, FileText, Trash2, Maximize2, Share2, X } from 'lucide-react';
 
 const STYLES = [
     { id: 'modern', name: 'Modern', emoji: '🏢', color: '#6B7F5E' },
@@ -22,8 +23,6 @@ const PROMPT_SUGGESTIONS = [
     'Place indoor plants and greenery',
     'Add pendant lights and modern fixtures',
     'Make it cozy with warm textiles',
-    'Add a reading nook with bookshelves',
-    'Change to marble countertops',
     'Add accent wall with wallpaper',
     'Make it kid-friendly and colorful',
 ];
@@ -31,12 +30,15 @@ const PROMPT_SUGGESTIONS = [
 export default function RoomPage() {
     const { id: roomId } = useParams();
     const addToast = useToastStore((s) => s.addToast);
+    const { user } = useAuthStore();
     const qc = useQueryClient();
     const [selectedStyle, setSelectedStyle] = useState('modern');
     const [customPrompt, setCustomPrompt] = useState('');
     const [generating, setGenerating] = useState(false);
+    const [chatting, setChatting] = useState(false);
     const [compareIdx, setCompareIdx] = useState(null);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [chatHistory, setChatHistory] = useState([]);
     const chatEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -45,271 +47,304 @@ export default function RoomPage() {
 
     const room = roomData?.room;
     const redesigns = redesignData?.redesigns || [];
+    const originalSrc = room?.originalImageUrl || '';
 
-    // Auto-scroll to bottom when new redesigns arrive
+    const handleExportPDF = async () => {
+        try {
+            addToast('Generating PDF proposal...', 'info');
+            const data = await exportAPI.generateProposal(roomId);
+            // Handle relative URL from backend
+            const fullUrl = data.url.startsWith('http') ? data.url : `/api${data.url}`;
+            window.open(fullUrl, '_blank');
+            addToast('PDF proposal generated!', 'success');
+        } catch (err) {
+            addToast('Failed to generate PDF', 'error');
+        }
+    };
+
+    const handleDownloadImage = (url, filename) => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'dreamspace-redesign.jpg';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    // Auto-scroll to bottom
     useEffect(() => {
         if (chatEndRef.current) {
             chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [redesigns.length, generating]);
+    }, [redesigns.length, chatHistory.length, generating, chatting]);
 
-    const handleGenerate = async (promptOverride = '') => {
-        const prompt = promptOverride || customPrompt;
+    const handleChat = async () => {
+        if (!customPrompt.trim()) return;
+        const msgText = customPrompt.trim();
+        setCustomPrompt('');
+        
+        const newHistory = [...chatHistory, { id: Date.now().toString(), type: 'chat', role: 'user', text: msgText, createdAt: new Date().toISOString() }];
+        setChatHistory(newHistory);
+        setChatting(true);
+        
+        try {
+            const context = `Room name: ${room.name}, type: ${room.roomType}`;
+            const historyForApi = newHistory.filter(m => m.type === 'chat').slice(0, -1).map(m => ({
+                role: m.role === 'ai' ? 'assistant' : m.role,
+                text: m.text
+            }));
+            const response = await geminiAPI.chat(historyForApi, msgText, context);
+            
+            setChatHistory(prev => [...prev, {
+                id: Date.now().toString(),
+                type: 'chat',
+                role: 'ai',
+                text: response.reply,
+                createdAt: new Date().toISOString()
+            }]);
+
+            // Update user credits in local store
+            if (response.creditsRemaining !== undefined && user) {
+                useAuthStore.getState().setAuth({ ...user, credits: response.creditsRemaining }, localStorage.getItem('dreamspace_token'));
+            }
+        } catch (err) {
+            addToast('Chat failed: ' + (err.message || 'Unknown error'), 'error');
+            // Remove the failed user message
+            setChatHistory(prev => prev.slice(0, -1));
+        } finally {
+            setChatting(false);
+        }
+    };
+
+    const handleGenerate = async () => {
         setGenerating(true);
         try {
-            await redesignAPI.create(roomId, selectedStyle, prompt);
-            addToast(`AI redesign generated!`);
-            qc.invalidateQueries({ queryKey: ['redesigns', roomId] });
+            const res = await redesignAPI.create(roomId, selectedStyle, customPrompt);
+            qc.invalidateQueries(['redesigns', roomId]);
+            addToast('Redesign generated successfully! ✨');
             setCustomPrompt('');
-        } catch (err) { addToast(err.message, 'error'); }
-        finally { setGenerating(false); }
+            
+            // Update user credits in local store
+            if (res.creditsRemaining !== undefined && user) {
+                useAuthStore.getState().setAuth({ ...user, credits: res.creditsRemaining }, localStorage.getItem('dreamspace_token'));
+            }
+        } catch (err) {
+            addToast(err.message, 'error');
+        } finally {
+            setGenerating(false);
+        }
     };
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleGenerate();
+            handleChat();
         }
     };
 
-    const handleSuggestionClick = (suggestion) => {
-        setCustomPrompt(suggestion);
+    const handleSuggestionClick = (s) => {
+        setCustomPrompt(s);
         setShowSuggestions(false);
-        // Auto-generate with the suggestion
-        setTimeout(() => handleGenerate(suggestion), 100);
+        if (inputRef.current) inputRef.current.focus();
     };
 
-    if (roomLoading) return (
-        <div className="room-page"><div className="container" style={{ display: 'flex', justifyContent: 'center', paddingTop: 160 }}><div className="spinner" /></div></div>
-    );
-    if (!room) return (
-        <div className="room-page"><div className="container"><div className="empty-state"><h3>Room not found</h3></div></div></div>
-    );
+    // Interleave chat messages and redesigns by date
+    const timeline = useMemo(() => {
+        const items = [
+            ...chatHistory.map(m => ({ ...m, sortDate: new Date(m.createdAt) })),
+            ...redesigns.map(r => ({ ...r, type: 'redesign', sortDate: new Date(r.createdAt) }))
+        ];
+        return items.sort((a, b) => a.sortDate - b.sortDate);
+    }, [chatHistory, redesigns]);
 
-    const originalSrc = room.originalImageUrl;
+    if (roomLoading) return <div className="page-loading"><div className="spinner" /></div>;
+    if (!room) return <div className="page-error">Room not found</div>;
 
     return (
-        <div className="room-chat-layout">
-            {/* ── Left: Chat Panel ── */}
-            <div className="chat-panel">
-                {/* Chat Header */}
-                <div className="chat-header">
-                    <Link to="/dashboard" className="chat-back-btn">
-                        <ArrowLeft size={18} />
-                    </Link>
-                    <div className="chat-header-info">
-                        <h3>{room.name || 'Untitled Room'}</h3>
-                        <span className="chat-room-type">{room.roomType?.replace(/_/g, ' ')}</span>
+        <div className="room-page-layout">
+            {/* ── Left: Main Chat Area ── */}
+            <div className="chat-area glass-blur">
+                {/* Header */}
+                <div className="chat-top-nav">
+                    <Link to="/dashboard" className="btn-icon"><ArrowLeft size={18} /></Link>
+                    <div className="chat-title-wrap">
+                        <h3>{room.title || 'Untitled Project'}</h3>
+                        <div className="chat-subtitle">
+                            <span className="badge-mini">{room.roomType?.replace('_', ' ')}</span>
+                            <span className="dot" />
+                            <span>{redesigns.length} Versions</span>
+                        </div>
                     </div>
                     <div className="chat-header-actions">
-                        <Link to={`/studio/${room.id}`} className="btn btn-ghost btn-sm">
-                            <Layers size={14} /> 3D Studio
+                        <button className="btn btn-secondary btn-sm" onClick={handleExportPDF}>
+                            <FileText size={14} /> Proposal
+                        </button>
+                        <Link to={`/studio/${room.id}`} className="btn btn-sage btn-sm">
+                            <Layers size={14} /> Studio
                         </Link>
                     </div>
                 </div>
 
-                {/* Chat Messages */}
-                <div className="chat-messages">
-                    {/* Original Image as first message */}
-                    <div className="chat-message system-message">
-                        <div className="message-avatar system">
-                            <Image size={16} />
-                        </div>
-                        <div className="message-content">
-                            <div className="message-label">Original Room Photo</div>
-                            <div className="message-image-wrap">
-                                <img src={originalSrc} alt="Original room" className="message-image" />
+                {/* Messages Timeline */}
+                <div className="chat-scroll-view">
+                    {/* Original Photo Message */}
+                    <div className="timeline-message system">
+                        <div className="msg-avatar"><Image size={16} /></div>
+                        <div className="msg-content">
+                            <div className="msg-label">Original Vision</div>
+                            <div className="msg-image-card">
+                                <img src={originalSrc} alt="Original" />
+                                <div className="msg-image-actions">
+                                    <button onClick={() => handleDownloadImage(originalSrc, 'original.jpg')}><Download size={16} /></button>
+                                </div>
                             </div>
-                            <div className="message-meta">
-                                Uploaded · {room.roomType?.replace(/_/g, ' ')} · Ready for AI redesign
-                            </div>
+                            <div className="msg-time">{new Date(room.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                     </div>
 
-                    {/* Redesign Results */}
-                    {redesigns.slice().reverse().map((r, i) => (
-                        <div key={r.id} className="chat-message-group">
-                            {/* User prompt message */}
-                            <div className="chat-message user-message">
-                                <div className="message-content">
-                                    <div className="message-bubble user">
-                                        <Wand2 size={14} />
-                                        <span>
-                                            {r.prompt?.length > 100
-                                                ? r.prompt.substring(0, 100) + '...'
-                                                : r.prompt || `${r.style} style redesign`}
-                                        </span>
-                                    </div>
-                                    <div className="message-meta right">
-                                        {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                </div>
+                    {timeline.map((item, idx) => (
+                        <div key={item.id || idx} className={`timeline-message ${item.role || 'ai'}`}>
+                            <div className="msg-avatar">
+                                {item.role === 'user' ? <UserIcon size={16} /> : <Sparkles size={16} />}
                             </div>
-
-                            {/* AI response */}
-                            <div className="chat-message ai-message">
-                                <div className="message-avatar ai">
-                                    <Sparkles size={16} />
-                                </div>
-                                <div className="message-content">
-                                    <div className="message-label">
-                                        AI Redesign — {r.style}
-                                        <span className="message-badge">{r.style}</span>
+                            <div className="msg-content">
+                                <div className="msg-label">{item.role === 'user' ? 'You' : 'DreamSpace AI'}</div>
+                                {item.type === 'chat' ? (
+                                    <div className={`msg-bubble ${item.role}`}>
+                                        {item.text}
                                     </div>
-                                    <div
-                                        className={`message-image-wrap clickable ${compareIdx === i ? 'comparing' : ''}`}
-                                        onClick={() => setCompareIdx(compareIdx === i ? null : i)}
-                                    >
-                                        <img src={r.imageUrl} alt={`${r.style} redesign`} className="message-image" />
-                                        <div className="message-image-overlay">
-                                            Click to {compareIdx === i ? 'close' : 'compare'}
+                                ) : (
+                                    <div className="msg-redesign-card glass-bg">
+                                        <div className="redesign-img-wrap">
+                                            <img src={item.imageUrl} alt={item.style} />
+                                            <div className="redesign-overlay">
+                                                <button className="btn-icon-white" onClick={() => setCompareIdx(item.id)}><Maximize2 size={18} /></button>
+                                                <button className="btn-icon-white" onClick={() => handleDownloadImage(item.imageUrl)}><Download size={18} /></button>
+                                            </div>
+                                        </div>
+                                        <div className="redesign-details">
+                                            <span className="style-tag" style={{ background: STYLES.find(s => s.id === item.style)?.color }}>{item.style}</span>
+                                            {item.prompt && <p className="redesign-prompt">"{item.prompt}"</p>}
                                         </div>
                                     </div>
-                                    <div className="message-meta">
-                                        <Clock size={12} />
-                                        {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        {r.method && <span className="method-tag">{r.method.replace(/_/g, ' ')}</span>}
-                                    </div>
-                                </div>
+                                )}
+                                <div className="msg-time">{item.sortDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                         </div>
                     ))}
 
-                    {/* Generating indicator */}
                     {generating && (
-                        <div className="chat-message ai-message">
-                            <div className="message-avatar ai thinking">
-                                <Sparkles size={16} />
-                            </div>
-                            <div className="message-content">
-                                <div className="thinking-indicator">
-                                    <div className="thinking-dots">
-                                        <span /><span /><span />
-                                    </div>
-                                    <span>AI is redesigning your room...</span>
+                        <div className="timeline-message ai thinking">
+                            <div className="msg-avatar"><Sparkles size={16} /></div>
+                            <div className="msg-content">
+                                <div className="thinking-box">
+                                    <div className="typing-dots"><span/><span/><span/></div>
+                                    <span>Reimagining your space...</span>
                                 </div>
                             </div>
                         </div>
                     )}
-
                     <div ref={chatEndRef} />
                 </div>
 
-                {/* Prompt Suggestions */}
-                {showSuggestions && (
-                    <div className="prompt-suggestions">
-                        <div className="suggestions-header">
-                            <span>✨ Prompt Ideas</span>
-                            <button onClick={() => setShowSuggestions(false)}>✕</button>
-                        </div>
-                        <div className="suggestions-grid">
-                            {PROMPT_SUGGESTIONS.map((s, i) => (
-                                <button key={i} className="suggestion-chip" onClick={() => handleSuggestionClick(s)}>
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Style Pills + Input Bar */}
-                <div className="chat-input-area">
-                    {/* Style selector */}
-                    <div className="style-pills">
-                        {STYLES.map((s) => (
-                            <button
-                                key={s.id}
-                                className={`style-pill ${selectedStyle === s.id ? 'active' : ''}`}
-                                onClick={() => setSelectedStyle(s.id)}
-                                style={{ '--pill-color': s.color }}
-                            >
-                                <span className="pill-emoji">{s.emoji}</span>
-                                <span className="pill-name">{s.name}</span>
+                {/* Input Controls */}
+                <div className="chat-controls-wrap">
+                    <div className="style-selector-row">
+                        {STYLES.map(s => (
+                            <button key={s.id} className={`style-chip ${selectedStyle === s.id ? 'active' : ''}`} onClick={() => setSelectedStyle(s.id)}>
+                                {s.emoji} {s.name}
                             </button>
                         ))}
                     </div>
 
-                    {/* Input */}
-                    <div className="chat-input-row">
-                        <button
-                            className="suggestions-toggle"
-                            onClick={() => setShowSuggestions(v => !v)}
-                            title="Prompt suggestions"
-                        >
+                    <div className="chat-input-container glass-bg">
+                        <button className="tool-btn" onClick={() => setShowSuggestions(!showSuggestions)} title="AI Suggestions">
                             <Sparkles size={18} />
                         </button>
-                        <input
+                        <textarea
                             ref={inputRef}
-                            className="chat-input"
-                            placeholder="Describe what you want... (e.g., add blue sofa, wooden floor)"
+                            className="chat-textarea"
+                            placeholder="Describe changes or ask for advice..."
                             value={customPrompt}
                             onChange={e => setCustomPrompt(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            disabled={generating}
+                            rows={1}
                         />
-                        <button
-                            className="chat-send-btn"
-                            onClick={() => handleGenerate()}
-                            disabled={generating}
-                        >
-                            {generating ? (
-                                <div className="spinner" style={{ width: 20, height: 20 }} />
-                            ) : (
+                        <div className="input-actions">
+                            <button className="btn-send-chat" onClick={handleChat} disabled={!customPrompt.trim() || chatting} title="Chat">
                                 <Send size={18} />
-                            )}
-                        </button>
+                            </button>
+                            <button className="btn-generate-main" onClick={handleGenerate} disabled={generating} title="Generate Design">
+                                {generating ? <div className="spinner-mini" /> : <><Wand2 size={16} /><span>Redesign</span></>}
+                            </button>
+                        </div>
                     </div>
-                    <div className="chat-input-hint">
-                        Press Enter to generate · Style: <strong>{STYLES.find(s => s.id === selectedStyle)?.name}</strong>
-                        {customPrompt ? ' + custom prompt' : ''}
-                    </div>
+
+                    {showSuggestions && (
+                        <div className="suggestions-popover glass-bg anim-fade-up">
+                            <div className="popover-header">
+                                <span>✨ Quick Ideas</span>
+                                <button onClick={() => setShowSuggestions(false)}><X size={14}/></button>
+                            </div>
+                            <div className="suggestions-grid">
+                                {PROMPT_SUGGESTIONS.map((s, i) => (
+                                    <button key={i} className="suggestion-item" onClick={() => handleSuggestionClick(s)}>{s}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* ── Right: Compare Panel ── */}
-            <div className="compare-panel">
-                {compareIdx !== null && redesigns[redesigns.length - 1 - compareIdx] ? (
-                    <>
-                        <div className="compare-header">
-                            <h4>Compare with Original</h4>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setCompareIdx(null)}>Close</button>
-                        </div>
-                        <div className="compare-slider-wrap">
-                            <ReactCompareSlider
-                                itemOne={<ReactCompareSliderImage src={originalSrc} alt="Original" />}
-                                itemTwo={<ReactCompareSliderImage src={redesigns[redesigns.length - 1 - compareIdx]?.imageUrl} alt="Redesigned" />}
-                                style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-lg)' }}
-                            />
-                        </div>
-                        <div className="compare-labels">
-                            <span>← Original</span>
-                            <span>{redesigns[redesigns.length - 1 - compareIdx]?.style} Redesign →</span>
-                        </div>
-                    </>
+            {/* ── Right: Preview / Compare Panel ── */}
+            <div className="preview-panel">
+                {compareIdx ? (
+                    (() => {
+                        const r = redesigns.find(rd => rd.id === compareIdx);
+                        return (
+                            <div className="compare-view-container anim-fade-in">
+                                <div className="compare-view-header">
+                                    <h4>Before & After</h4>
+                                    <button className="btn-close-preview" onClick={() => setCompareIdx(null)}><X size={20}/></button>
+                                </div>
+                                <div className="slider-wrapper">
+                                    <ReactCompareSlider
+                                        itemOne={<ReactCompareSliderImage src={originalSrc} alt="Before" />}
+                                        itemTwo={<ReactCompareSliderImage src={r.imageUrl} alt="After" />}
+                                        style={{ width: '100%', height: '100%', borderRadius: 16 }}
+                                    />
+                                </div>
+                                <div className="compare-info glass-bg">
+                                    <div className="info-group">
+                                        <span className="label">Style</span>
+                                        <span className="val">{r.style}</span>
+                                    </div>
+                                    <div className="info-actions">
+                                        <button className="btn btn-secondary btn-sm" onClick={() => handleDownloadImage(r.imageUrl)}>Download Result</button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()
                 ) : (
-                    <div className="compare-empty">
-                        <div className="compare-empty-img">
-                            <img src={originalSrc} alt="Original room" />
-                        </div>
-                        <h4>Your Room</h4>
-                        <p>Click any AI redesign to compare it with the original side-by-side.</p>
-                        <div className="compare-empty-tips">
-                            <div className="tip-item">
-                                <Wand2 size={16} />
-                                <span>Select a style and type a prompt</span>
-                            </div>
-                            <div className="tip-item">
-                                <Sparkles size={16} />
-                                <span>Try prompt suggestions for inspiration</span>
-                            </div>
-                            <div className="tip-item">
-                                <Layers size={16} />
-                                <span>Open in 3D Studio for detailed editing</span>
-                            </div>
+                    <div className="empty-preview">
+                        <div className="empty-preview-content">
+                            <div className="icon-circle"><Maximize2 size={32} /></div>
+                            <h3>Compare Designs</h3>
+                            <p>Select any redesign from the chat to see a high-resolution side-by-side comparison with your original photo.</p>
                         </div>
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+function UserIcon({ size }) {
+    return (
+        <div style={{ width: size, height: size, background: 'var(--c-sage)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: 700 }}>
+            U
         </div>
     );
 }

@@ -50,7 +50,7 @@ export default function AboutPage() {
                         <span className="overline">About Us</span>
                         <h1>Designing the Future<br />of <em style={{ fontStyle: 'italic', color: 'var(--color-olive)' }}>Interior Design</em></h1>
                         <div className="divider-line" />
-                        <p>We believe everyone deserves a beautiful living space. RoomForge AI combines cutting-edge artificial intelligence with an intuitive 3D studio to make professional interior design accessible to all.</p>
+                        <p>We believe everyone deserves a beautiful living space. DreamSpace AI combines cutting-edge artificial intelligence with an intuitive 3D studio to make professional interior design accessible to all.</p>
                     </AnimSection>
                 </div>
             </section>
@@ -63,10 +63,10 @@ export default function AboutPage() {
                             <span className="overline" style={{ textAlign: 'left' }}>Our Mission</span>
                             <h2>Empowering Creativity Through Technology</h2>
                             <p style={{ fontSize: '1.05rem', lineHeight: 1.8, marginTop: 'var(--space-lg)' }}>
-                                RoomForge AI was born from a simple observation: visualizing interior design changes is hard. Our platform bridges the gap between imagination and reality by combining AI-generated photorealistic redesigns with an interactive 3D furniture studio.
+                                DreamSpace AI was born from a simple observation: visualizing interior design changes is hard. Our platform bridges the gap between imagination and reality by combining AI-generated photorealistic redesigns with an interactive 3D furniture studio.
                             </p>
                             <p style={{ fontSize: '1.05rem', lineHeight: 1.8, marginTop: 'var(--space-md)' }}>
-                                Whether you're a homeowner looking to refresh your space, or a professional designer presenting concepts to clients, RoomForge gives you the tools to bring your vision to life — instantly.
+                                Whether you're a homeowner looking to refresh your space, or a professional designer presenting concepts to clients, DreamSpace AI gives you the tools to bring your vision to life — instantly.
                             </p>
                         </AnimSection>
                         <AnimSection animation="anim-fade-up" delay="anim-delay-2">

@@ -49,7 +49,7 @@
 
 ## 🌟 About The Project
 
-> **RoomForge AI** is a full-stack interior design platform that combines **AI-powered photorealistic room redesigns** with an **interactive 3D furniture studio**. Upload a photo of any room, describe what you want in natural language, and watch AI transform your space — then fine-tune every detail in our 3D environment.
+> **DreamSpace AI** is a full-stack interior design platform that combines **AI-powered photorealistic room redesigns** with an **interactive 3D furniture studio**. Upload a photo of any room, describe what you want in natural language, and watch AI transform your space — then fine-tune every detail in our 3D environment.
 
 <br/>
 
@@ -656,11 +656,11 @@ This project is built for **educational purposes** by **The Code Architects**.
 
 <div align="center">
 
-  <img src="assets/logo.png" alt="RoomForge AI" width="40" />
+  <img src="assets/logo.png" alt="DreamSpace AI" width="40" />
 
   <br/>
 
-  **RoomForge AI** — Built with ❤️ by The Code Architects
+  **DreamSpace AI** — Built with ❤️ by The Code Architects
 
   <br/>
 
