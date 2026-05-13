@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import useToastStore from '../store/toastStore';
+import { contactAPI } from '../api/client';
 
 function useInView(options = {}) {
     const ref = useRef(null);
@@ -27,6 +28,7 @@ export default function ContactPage() {
     const addToast = useToastStore((s) => s.addToast);
     const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
     const [sending, setSending] = useState(false);
+    const [sent, setSent] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,23 +36,31 @@ export default function ContactPage() {
             addToast('Please fill in all required fields', 'error');
             return;
         }
+        if (form.message.length < 10) {
+            addToast('Message must be at least 10 characters', 'error');
+            return;
+        }
         setSending(true);
-        // Simulate sending
-        await new Promise(r => setTimeout(r, 1500));
-        addToast('Message sent successfully! We\'ll get back to you soon.');
-        setForm({ name: '', email: '', subject: '', message: '' });
-        setSending(false);
+        try {
+            await contactAPI.submit(form);
+            addToast('Message sent successfully!', 'success');
+            setSent(true);
+            setForm({ name: '', email: '', subject: '', message: '' });
+        } catch (err) {
+            addToast(err.message || 'Failed to send message', 'error');
+        } finally {
+            setSending(false);
+        }
     };
 
     const contactInfo = [
-        { icon: '📧', label: 'Email', value: 'hello@roomforge.ai', desc: 'Send us a message anytime' },
+        { icon: '📧', label: 'Email', value: 'hello@dreamspaceai.com', desc: 'Send us a message anytime' },
         { icon: '📍', label: 'Location', value: 'India', desc: 'Built with ❤️ in India' },
         { icon: '⏰', label: 'Response Time', value: '< 24 hours', desc: 'We respond quickly' },
     ];
 
     return (
         <div className="contact-page">
-            {/* Header */}
             <section className="section" style={{ paddingTop: 140 }}>
                 <div className="container">
                     <AnimSection className="section-header">
@@ -62,41 +72,52 @@ export default function ContactPage() {
                 </div>
             </section>
 
-            {/* Form + Info */}
             <section className="section section-alt" style={{ paddingTop: 0 }}>
                 <div className="container">
                     <div className="contact-grid">
-                        {/* Form */}
-                        <AnimSection className="contact-form-card" animation="anim-fade-up">
-                            <h3>Send a Message</h3>
-                            <form onSubmit={handleSubmit}>
-                                <div className="contact-field-grid">
-                                    <div>
-                                        <label>Name *</label>
-                                        <input className="input" placeholder="Your name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                        {sent ? (
+                            <AnimSection className="contact-form-card" animation="anim-fade-up">
+                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: 16 }}>✅</div>
+                                    <h2>Message Sent!</h2>
+                                    <p style={{ opacity: 0.7, marginBottom: 24 }}>Thanks for reaching out. We'll get back to you within 24 hours.</p>
+                                    <button className="btn btn-secondary" onClick={() => setSent(false)}>Send Another Message</button>
+                                </div>
+                            </AnimSection>
+                        ) : (
+                            <AnimSection className="contact-form-card" animation="anim-fade-up">
+                                <h3>Send a Message</h3>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="contact-field-grid">
+                                        <div>
+                                            <label>Name *</label>
+                                            <input className="input" placeholder="Your name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                                        </div>
+                                        <div>
+                                            <label>Email *</label>
+                                            <input className="input" type="email" placeholder="your@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label>Email *</label>
-                                        <input className="input" type="email" placeholder="your@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                                    <div style={{ marginTop: 'var(--space-md)' }}>
+                                        <label>Subject</label>
+                                        <input className="input" placeholder="What's this about?" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} />
                                     </div>
-                                </div>
-                                <div style={{ marginTop: 'var(--space-md)' }}>
-                                    <label>Subject</label>
-                                    <input className="input" placeholder="What's this about?" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} />
-                                </div>
-                                <div style={{ marginTop: 'var(--space-md)' }}>
-                                    <label>Message *</label>
-                                    <textarea className="input" rows={5} placeholder="Tell us what's on your mind..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
-                                </div>
-                                <div style={{ marginTop: 'var(--space-xl)' }}>
-                                    <button className="btn btn-olive btn-lg" type="submit" disabled={sending} style={{ width: '100%' }}>
-                                        {sending ? 'Sending...' : '✦ Send Message'}
-                                    </button>
-                                </div>
-                            </form>
-                        </AnimSection>
+                                    <div style={{ marginTop: 'var(--space-md)' }}>
+                                        <label>Message *</label>
+                                        <textarea className="input" rows={5} placeholder="Tell us what's on your mind..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} required minLength={10} />
+                                        <div style={{ fontSize: '0.72rem', opacity: 0.5, marginTop: 4, textAlign: 'right' }}>
+                                            {form.message.length}/5000
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: 'var(--space-xl)' }}>
+                                        <button className="btn btn-olive btn-lg" type="submit" disabled={sending} style={{ width: '100%' }}>
+                                            {sending ? 'Sending...' : '✦ Send Message'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </AnimSection>
+                        )}
 
-                        {/* Contact Info */}
                         <AnimSection animation="anim-fade-up" delay="anim-delay-2">
                             <div className="contact-info-cards">
                                 {contactInfo.map((info, i) => (
@@ -111,11 +132,10 @@ export default function ContactPage() {
                                 ))}
                             </div>
 
-                            {/* FAQ Quick */}
                             <div className="contact-faq-mini">
                                 <h4>Common Questions</h4>
                                 <div className="faq-mini-item">
-                                    <strong>Is RoomForge free?</strong>
+                                    <strong>Is DreamSpace AI free?</strong>
                                     <p>Yes! The free plan includes 5 credits per day for AI redesigns.</p>
                                 </div>
                                 <div className="faq-mini-item">

@@ -6,6 +6,9 @@ import * as THREE from 'three';
 import {
     ArrowLeft, Box, ChevronRight, Copy, Download, Eye, Grid3X3, Lamp, Maximize,
     Monitor, Move, Palette, RotateCcw, Save, Search, Sofa, Sparkles, Trash2,
+    FlipHorizontal, FlipVertical, ArrowUp, ArrowDown, ArrowLeftIcon, ArrowRightIcon,
+    Magnet, Undo2, Redo2, Lock, Unlock, AlignCenterHorizontal, ChevronsUp, ChevronsDown,
+    RotateCw, Target, Crosshair, Camera, Settings, Grab,
 } from 'lucide-react';
 import useStudioStore from '../store/studioStore';
 import useToastStore from '../store/toastStore';
@@ -48,12 +51,13 @@ const CATALOG_CATEGORIES = [
         name: 'Furniture',
         icon: '🛋️',
         description: 'Sofas, chairs, tables & more',
+        img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=140&fit=crop',
         subcategories: [
-            { id: 'upholstered', name: 'Upholstered Furniture', icon: '🛋️', types: ['sofa'] },
-            { id: 'chairs', name: 'Chairs & Benches', icon: '🪑', types: ['chair'] },
-            { id: 'tables', name: 'Tables', icon: '🪵', types: ['table', 'side_table'] },
-            { id: 'beds', name: 'Beds', icon: '🛏️', types: ['bed'] },
-            { id: 'cabinets', name: 'Cabinets & Shelves', icon: '📚', types: ['almirah', 'bookshelf'] },
+            { id: 'upholstered', name: 'Upholstered Furniture', icon: '🛋️', types: ['sofa'], img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=160&h=100&fit=crop' },
+            { id: 'chairs', name: 'Chairs & Benches', icon: '🪑', types: ['chair'], img: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=160&h=100&fit=crop' },
+            { id: 'tables', name: 'Tables', icon: '🪵', types: ['table', 'side_table'], img: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?w=160&h=100&fit=crop' },
+            { id: 'beds', name: 'Beds', icon: '🛏️', types: ['bed'], img: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=160&h=100&fit=crop' },
+            { id: 'cabinets', name: 'Cabinets & Shelves', icon: '📚', types: ['almirah', 'bookshelf'], img: 'https://images.unsplash.com/photo-1594620302200-9a762244a156?w=160&h=100&fit=crop' },
         ],
     },
     {
@@ -61,9 +65,10 @@ const CATALOG_CATEGORIES = [
         name: 'Lighting',
         icon: '💡',
         description: 'Lamps & light fixtures',
+        img: 'https://images.unsplash.com/photo-1507473885765-e6ed057ab3fe?w=200&h=140&fit=crop',
         subcategories: [
-            { id: 'floor_lamps', name: 'Floor Lamps', icon: '🪔', types: ['lamp', 'floor_lamp'] },
-            { id: 'pendant_lights', name: 'Pendant Lights', icon: '💡', types: ['pendant_light'] },
+            { id: 'floor_lamps', name: 'Floor Lamps', icon: '🪔', types: ['lamp', 'floor_lamp'], img: 'https://images.unsplash.com/photo-1507473885765-e6ed057ab3fe?w=160&h=100&fit=crop' },
+            { id: 'pendant_lights', name: 'Pendant Lights', icon: '💡', types: ['pendant_light'], img: 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=160&h=100&fit=crop' },
         ],
     },
     {
@@ -71,10 +76,11 @@ const CATALOG_CATEGORIES = [
         name: 'Decor',
         icon: '🎨',
         description: 'Art, plants & accessories',
+        img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=200&h=140&fit=crop',
         subcategories: [
-            { id: 'wall_decor', name: 'Wall Art & Mirrors', icon: '🖼️', types: ['wall_art', 'mirror', 'clock'] },
-            { id: 'plants', name: 'Plants', icon: '🪴', types: ['plant'] },
-            { id: 'rugs', name: 'Rugs & Carpets', icon: '🧶', types: ['rug'] },
+            { id: 'wall_decor', name: 'Wall Art & Mirrors', icon: '🖼️', types: ['wall_art', 'mirror', 'clock'], img: 'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=160&h=100&fit=crop' },
+            { id: 'plants', name: 'Plants', icon: '🪴', types: ['plant'], img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=160&h=100&fit=crop' },
+            { id: 'rugs', name: 'Rugs & Carpets', icon: '🧶', types: ['rug'], img: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=160&h=100&fit=crop' },
         ],
     },
     {
@@ -82,8 +88,9 @@ const CATALOG_CATEGORIES = [
         name: 'Textiles',
         icon: '🪟',
         description: 'Curtains & fabrics',
+        img: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=200&h=140&fit=crop',
         subcategories: [
-            { id: 'curtains', name: 'Curtains', icon: '🪟', types: ['curtain'] },
+            { id: 'curtains', name: 'Curtains', icon: '🪟', types: ['curtain'], img: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=160&h=100&fit=crop' },
         ],
     },
     {
@@ -91,8 +98,9 @@ const CATALOG_CATEGORIES = [
         name: 'Electronics',
         icon: '📺',
         description: 'TV, audio & gadgets',
+        img: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=200&h=140&fit=crop',
         subcategories: [
-            { id: 'tv_audio', name: 'TV & Audio', icon: '📺', types: ['tv'] },
+            { id: 'tv_audio', name: 'TV & Audio', icon: '📺', types: ['tv'], img: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=160&h=100&fit=crop' },
         ],
     },
 ];
@@ -195,7 +203,7 @@ function exportLayout(items) {
     const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `roomforge-layout-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    a.href = url; a.download = `dreamspace-layout-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
     a.click(); URL.revokeObjectURL(url);
 }
 
@@ -471,12 +479,17 @@ function SceneItem({ item, selected, onSelect, onSetRef }) {
     );
 }
 
-function SceneTransformControls({ selectedObj, transformMode, onChange, selectedItemId, orbitRef, roomDims }) {
+function SceneTransformControls({ selectedObj, transformMode, onChange, selectedItemId, orbitRef, roomDims, snapEnabled }) {
     const controlRef = useRef();
 
     useEffect(() => {
         if (!controlRef.current || !selectedObj) return undefined;
         const controls = controlRef.current;
+
+        // Apply snap settings
+        controls.translationSnap = snapEnabled ? 0.25 : null;
+        controls.rotationSnap = snapEnabled ? (Math.PI / 12) : null;
+        controls.scaleSnap = snapEnabled ? 0.1 : null;
 
         const onDragging = (event) => { if (orbitRef.current) orbitRef.current.enabled = !event.value; };
         const onObjectChange = () => {
@@ -497,7 +510,7 @@ function SceneTransformControls({ selectedObj, transformMode, onChange, selected
             controls.removeEventListener('objectChange', onObjectChange);
             if (orbitRef.current) orbitRef.current.enabled = true;
         };
-    }, [selectedObj, selectedItemId, onChange, orbitRef, roomDims]);
+    }, [selectedObj, selectedItemId, onChange, orbitRef, roomDims, snapEnabled]);
 
     if (!selectedObj) return null;
     return <TransformControls ref={controlRef} object={selectedObj} mode={transformMode} size={0.75} />;
@@ -522,7 +535,7 @@ function CameraController({ is2D, roomDims }) {
     return null;
 }
 
-function StudioScene({ items, selectedItemId, transformMode, onSelect, onChange, onClearSelection, showGrid, is2D, roomDims }) {
+function StudioScene({ items, selectedItemId, transformMode, onSelect, onChange, onClearSelection, showGrid, is2D, roomDims, snapEnabled }) {
     const orbitRef = useRef();
     const [selectedObj, setSelectedObj] = useState(null);
 
@@ -530,7 +543,7 @@ function StudioScene({ items, selectedItemId, transformMode, onSelect, onChange,
     const handleSetRef = useMemo(() => (obj) => setSelectedObj(obj), []);
 
     return (
-        <Canvas camera={{ position: [5.5, 4.4, 6.5], fov: 42 }} shadows gl={{ antialias: true }} onPointerMissed={onClearSelection}>
+        <Canvas camera={{ position: [5.5, 4.4, 6.5], fov: 42 }} shadows gl={{ antialias: true, preserveDrawingBuffer: true }} onPointerMissed={onClearSelection}>
             <color attach="background" args={["#F5F1EA"]} />
             <ambientLight intensity={0.65} />
             <directionalLight position={[4, 7, 4]} intensity={0.95} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
@@ -545,7 +558,7 @@ function StudioScene({ items, selectedItemId, transformMode, onSelect, onChange,
                 <SceneItem key={item.id} item={item} selected={selectedItemId === item.id} onSelect={onSelect} onSetRef={handleSetRef} />
             ))}
 
-            <SceneTransformControls selectedObj={selectedObj} transformMode={transformMode} onChange={onChange} selectedItemId={selectedItemId} orbitRef={orbitRef} roomDims={roomDims} />
+            <SceneTransformControls selectedObj={selectedObj} transformMode={transformMode} onChange={onChange} selectedItemId={selectedItemId} orbitRef={orbitRef} roomDims={roomDims} snapEnabled={snapEnabled} />
             <OrbitControls ref={orbitRef} enableDamping dampingFactor={0.08} minDistance={2.5} maxDistance={15}
                 minPolarAngle={is2D ? Math.PI / 2 - 0.01 : 0.25} maxPolarAngle={Math.PI / 2.05} target={[0, 0.7, 0]} />
         </Canvas>
@@ -695,9 +708,14 @@ function CategoryBrowser({ assets, onAddAsset, onAddPolyModel, searchQuery, onSe
                         <div className="catalog-grid">
                             {CATALOG_CATEGORIES.map(cat => (
                                 <button key={cat.id} className="catalog-category-card" onClick={() => setNavPath([cat.id])}>
-                                    <span className="catalog-card-icon">{cat.icon}</span>
+                                    {cat.img ? (
+                                        <img src={cat.img} alt={cat.name} className="catalog-card-thumb" />
+                                    ) : (
+                                        <span className="catalog-card-icon">{cat.icon}</span>
+                                    )}
                                     <div className="catalog-card-info">
                                         <span className="catalog-card-name">{cat.name}</span>
+                                        <span className="catalog-card-desc">{cat.description}</span>
                                         <span className="catalog-card-count">{getCategoryCount(cat)} items</span>
                                     </div>
                                     <ChevronRight size={14} className="catalog-card-arrow" />
@@ -711,7 +729,11 @@ function CategoryBrowser({ assets, onAddAsset, onAddPolyModel, searchQuery, onSe
                         <div className="catalog-grid">
                             {currentCategory.subcategories.map(sub => (
                                 <button key={sub.id} className="catalog-category-card" onClick={() => setNavPath([currentCategory.id, sub.id])}>
-                                    <span className="catalog-card-icon">{sub.icon}</span>
+                                    {sub.img ? (
+                                        <img src={sub.img} alt={sub.name} className="catalog-card-thumb" />
+                                    ) : (
+                                        <span className="catalog-card-icon">{sub.icon}</span>
+                                    )}
                                     <div className="catalog-card-info">
                                         <span className="catalog-card-name">{sub.name}</span>
                                         <span className="catalog-card-count">{getSubcategoryCount(sub)} items</span>
@@ -764,9 +786,14 @@ export default function StudioPage() {
     const addToast = useToastStore((s) => s.addToast);
 
     const {
-        items, selectedItemId, transformMode,
+        items, selectedItemId, transformMode, snapEnabled, uniformScale,
         addItem, removeItem, updateItem, selectItem,
         clearSelection, setTransformMode, loadLayout, clearScene, getLayoutJson,
+        nudgeItem, rotateItem, snapRotation, resetRotation, flipItem,
+        setItemPosition, setItemRotation, setItemScale,
+        alignToWall, dropToFloor, elevateItem,
+        toggleSnap, toggleUniformScale,
+        pushUndo, undo, redo,
     } = useStudioStore();
 
     const [assets, setAssets] = useState([]);
@@ -790,33 +817,87 @@ export default function StudioPage() {
         if (selectedItem) setSidebarTab('properties');
     }, [selectedItem]);
 
-    /* ── Keyboard shortcuts ── */
+    /* ── Keyboard shortcuts — comprehensive physics ── */
     useEffect(() => {
+        const NUDGE = 0.1;
+        const NUDGE_FAST = 0.5;
+        const ROT_STEP = Math.PI / 12; // 15°
+        const ELEV_STEP = 0.05;
+
         const handleKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-            switch (e.key.toLowerCase()) {
-                case 'g': setTransformMode('translate'); break;
-                case 'r': setTransformMode('rotate'); break;
-                case 's':
-                    if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); setTransformMode('scale'); }
-                    break;
-                case 'delete': case 'backspace':
-                    if (selectedItemId) { removeItem(selectedItemId); addToast('Item removed'); }
-                    break;
-                case 'escape': clearSelection(); break;
-                case 'd':
-                    if ((e.metaKey || e.ctrlKey) && selectedItem) {
-                        e.preventDefault();
-                        const clone = normalizeItem({ ...selectedItem, id: uid(selectedItem.type), position: { x: selectedItem.position.x + 0.35, y: selectedItem.position.y, z: selectedItem.position.z + 0.35 } }, items.length);
-                        addItem(clone); selectItem(clone.id);
-                    }
-                    break;
-                default: break;
+            const key = e.key.toLowerCase();
+            const shift = e.shiftKey;
+            const meta = e.metaKey || e.ctrlKey;
+
+            // Transform mode shortcuts
+            if (key === 'g') { setTransformMode('translate'); return; }
+            if (key === 'r' && !meta) { setTransformMode('rotate'); return; }
+            if (key === 's' && !meta) { e.preventDefault(); setTransformMode('scale'); return; }
+
+            // Undo/Redo
+            if (meta && key === 'z' && !shift) { e.preventDefault(); undo(); addToast('Undo'); return; }
+            if (meta && (key === 'y' || (key === 'z' && shift))) { e.preventDefault(); redo(); addToast('Redo'); return; }
+
+            // Delete
+            if ((key === 'delete' || key === 'backspace') && selectedItemId) { pushUndo(); removeItem(selectedItemId); addToast('Item removed'); return; }
+
+            // Escape — deselect
+            if (key === 'escape') { clearSelection(); return; }
+
+            // Duplicate (Cmd/Ctrl+D)
+            if (meta && key === 'd' && selectedItem) {
+                e.preventDefault();
+                const clone = normalizeItem({ ...selectedItem, id: uid(selectedItem.type), position: { x: selectedItem.position.x + 0.35, y: selectedItem.position.y, z: selectedItem.position.z + 0.35 } }, items.length);
+                pushUndo(); addItem(clone); selectItem(clone.id);
+                return;
             }
+
+            // === SELECTED ITEM PHYSICS ===
+            if (!selectedItemId) return;
+
+            const nudge = shift ? NUDGE_FAST : NUDGE;
+
+            // Arrow keys — positional nudge (X/Z plane)
+            if (key === 'arrowleft')  { e.preventDefault(); nudgeItem(selectedItemId, 'x', -nudge); return; }
+            if (key === 'arrowright') { e.preventDefault(); nudgeItem(selectedItemId, 'x',  nudge); return; }
+            if (key === 'arrowup')    { e.preventDefault(); nudgeItem(selectedItemId, 'z', -nudge); return; }
+            if (key === 'arrowdown')  { e.preventDefault(); nudgeItem(selectedItemId, 'z',  nudge); return; }
+
+            // Q/E — rotate Y (horizontal turntable)
+            if (key === 'q') { rotateItem(selectedItemId, 'y', -ROT_STEP); return; }
+            if (key === 'e') { rotateItem(selectedItemId, 'y',  ROT_STEP); return; }
+
+            // [ / ] — snap rotate 90° on Y
+            if (key === '[') { pushUndo(); rotateItem(selectedItemId, 'y', -Math.PI / 2); return; }
+            if (key === ']') { pushUndo(); rotateItem(selectedItemId, 'y',  Math.PI / 2); return; }
+
+            // T/B — tilt forward/back (rotate X)
+            if (key === 't') { rotateItem(selectedItemId, 'x', -ROT_STEP); return; }
+            if (key === 'b') { rotateItem(selectedItemId, 'x',  ROT_STEP); return; }
+
+            // Page Up / Page Down — elevation (Y axis)
+            if (key === 'pageup')   { e.preventDefault(); elevateItem(selectedItemId,  ELEV_STEP); return; }
+            if (key === 'pagedown') { e.preventDefault(); elevateItem(selectedItemId, -ELEV_STEP); return; }
+
+            // Home — drop to floor
+            if (key === 'home') { e.preventDefault(); dropToFloor(selectedItemId, DEFAULT_Y[selectedItem?.type] || 0.3); return; }
+
+            // F — flip (rotate 180° on Y)
+            if (key === 'f' && !meta) { pushUndo(); flipItem(selectedItemId, 'y'); return; }
+
+            // N — snap rotation to nearest 90°
+            if (key === 'n') { pushUndo(); snapRotation(selectedItemId); addToast('Rotation snapped'); return; }
+
+            // 0 — reset rotation
+            if (key === '0' && !meta) { pushUndo(); resetRotation(selectedItemId); addToast('Rotation reset'); return; }
         };
+
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedItemId, selectedItem, items.length, setTransformMode, removeItem, clearSelection, addItem, selectItem, addToast]);
+    }, [selectedItemId, selectedItem, items.length, setTransformMode, removeItem, clearSelection,
+        addItem, selectItem, addToast, nudgeItem, rotateItem, snapRotation, resetRotation,
+        flipItem, elevateItem, dropToFloor, pushUndo, undo, redo]);
 
     /* ── Load assets ── */
     useEffect(() => {
@@ -880,11 +961,24 @@ export default function StudioPage() {
 
     const duplicateSelected = () => {
         if (!selectedItem) return;
+        pushUndo();
         const clone = normalizeItem({ ...selectedItem, id: uid(selectedItem.type), position: { x: selectedItem.position.x + 0.35, y: selectedItem.position.y, z: selectedItem.position.z + 0.35 } }, items.length);
         addItem(clone); selectItem(clone.id);
     };
 
-    const deleteSelected = () => { if (!selectedItemId) return; removeItem(selectedItemId); addToast('Item removed'); };
+    const deleteSelected = () => { if (!selectedItemId) return; pushUndo(); removeItem(selectedItemId); addToast('Item removed'); };
+
+    const captureScreenshot = () => {
+        const canvas = document.querySelector('.studio-canvas canvas');
+        if (!canvas) { addToast('Canvas not found', 'error'); return; }
+        try {
+            const link = document.createElement('a');
+            link.download = `dreamspace-capture-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            addToast('Screenshot saved! 📸');
+        } catch (err) { addToast('Failed to capture screenshot', 'error'); }
+    };
 
     const saveCurrentLayout = async () => {
         if (!roomId) { addToast('Open studio from a room to save layouts', 'error'); return; }
@@ -925,8 +1019,8 @@ export default function StudioPage() {
         <div className="studio-layout">
             {/* ═══ VIEWPORT ═══ */}
             <div className="studio-viewport">
-                {/* Top toolbar */}
-                <div className="studio-toolbar">
+                {/* Floating Top Toolbar */}
+                <div className="studio-toolbar glass-bg glass-blur">
                     <div className="toolbar-group">
                         <span className="toolbar-label">Transform</span>
                         <button className={`toolbar-btn ${transformMode === 'translate' ? 'active' : ''}`} title="Move (G)" onClick={() => setTransformMode('translate')}><Move size={16} /></button>
@@ -937,7 +1031,9 @@ export default function StudioPage() {
                     <div className="toolbar-divider" />
 
                     <div className="toolbar-group">
-                        <span className="toolbar-label">Edit</span>
+                        <span className="toolbar-label">Actions</span>
+                        <button className="toolbar-btn" title="Undo (⌘Z)" onClick={undo}><Undo2 size={16} /></button>
+                        <button className="toolbar-btn" title="Redo (⌘Y)" onClick={redo}><Redo2 size={16} /></button>
                         <button className="toolbar-btn" title="Duplicate (⌘D)" onClick={duplicateSelected} disabled={!selectedItem}><Copy size={16} /></button>
                         <button className="toolbar-btn danger" title="Delete (Del)" onClick={deleteSelected} disabled={!selectedItem}><Trash2 size={16} /></button>
                     </div>
@@ -945,92 +1041,135 @@ export default function StudioPage() {
                     <div className="toolbar-divider" />
 
                     <div className="toolbar-group">
-                        <span className="toolbar-label">View</span>
-                        <button className={`toolbar-btn ${showGrid ? 'active' : ''}`} title="Toggle Grid" onClick={() => setShowGrid(v => !v)}><Grid3X3 size={16} /></button>
+                        <span className="toolbar-label">Physics</span>
+                        <button className="toolbar-btn" title="Flip 180° (F)" onClick={() => selectedItemId && (pushUndo(), flipItem(selectedItemId, 'y'))} disabled={!selectedItem}><FlipHorizontal size={16} /></button>
+                        <button className="toolbar-btn" title="Snap to 90° (N)" onClick={() => selectedItemId && (pushUndo(), snapRotation(selectedItemId))} disabled={!selectedItem}><Magnet size={16} /></button>
+                        <button className="toolbar-btn" title="Reset Rotation (0)" onClick={() => selectedItemId && (pushUndo(), resetRotation(selectedItemId))} disabled={!selectedItem}><Target size={16} /></button>
+                        <button className="toolbar-btn" title="Drop to Floor (Home)" onClick={() => selectedItemId && dropToFloor(selectedItemId, DEFAULT_Y[selectedItem?.type] || 0.3)} disabled={!selectedItem}><ChevronsDown size={16} /></button>
                     </div>
 
                     <div className="toolbar-divider" />
 
                     <div className="toolbar-group">
-                        <span className="toolbar-label">File</span>
+                        <span className="toolbar-label">View</span>
+                        <button className={`toolbar-btn ${showGrid ? 'active' : ''}`} title="Toggle Grid" onClick={() => setShowGrid(v => !v)}><Grid3X3 size={16} /></button>
+                        <button className={`toolbar-btn ${!is2D ? 'active' : ''}`} title="3D View" onClick={() => setIs2D(false)}>3D</button>
+                        <button className={`toolbar-btn ${is2D ? 'active' : ''}`} title="2D View" onClick={() => setIs2D(true)}>2D</button>
+                        <button className={`toolbar-btn ${snapEnabled ? 'active' : ''}`} title="Snap to Grid" onClick={toggleSnap}><Magnet size={16} /></button>
+                    </div>
+
+                    <div className="toolbar-divider" />
+
+                    <div className="toolbar-group">
+                        <button className="toolbar-btn" title="Capture Screenshot" onClick={captureScreenshot}><Camera size={16} /></button>
                         <button className="toolbar-btn" title="Export JSON" onClick={() => exportLayout(getLayoutJson())}><Download size={16} /></button>
-                        <button className="toolbar-btn save" title="Save Layout" onClick={saveCurrentLayout} disabled={saving || !roomId}><Save size={16} /></button>
+                        <button className="toolbar-btn" title="Save Layout" onClick={saveCurrentLayout} disabled={saving || !roomId} style={{ color: saving ? 'var(--c-text-muted)' : 'var(--c-sage-light)' }}><Save size={16} /></button>
                     </div>
                 </div>
 
-                {/* 2D/3D Toggle + Info Overlay */}
-                <div className="studio-view-toggle">
-                    <button className={`view-toggle-btn ${!is2D ? 'active' : ''}`} onClick={() => setIs2D(false)}>3D</button>
-                    <button className={`view-toggle-btn ${is2D ? 'active' : ''}`} onClick={() => setIs2D(true)}>2D</button>
+                {/* Scene Info Badges */}
+                <div className="studio-info-bar" style={{ position: 'absolute', bottom: 24, left: 24, display: 'flex', gap: 12, pointerEvents: 'none', zIndex: 5 }}>
+                    <span className="badge-premium glass-bg glass-blur" style={{ padding: '6px 12px' }}><Box size={12} style={{ marginRight: 6 }} /> {items.length} items</span>
+                    <span className="badge-premium glass-bg glass-blur" style={{ padding: '6px 12px' }}>{roomDims.width}m × {roomDims.depth}m</span>
+                    {snapEnabled && <span className="badge-premium glass-bg glass-blur" style={{ padding: '6px 12px', color: 'var(--c-sage)' }}><Magnet size={12} style={{ marginRight: 4 }} /> Snap</span>}
                 </div>
 
-                {/* Scene item count */}
-                <div className="studio-info-bar">
-                    <span className="info-badge"><Box size={12} /> {items.length} items</span>
-                    <span className="info-badge">{roomDims.width}m × {roomDims.depth}m</span>
-                </div>
+                {/* ═══ FLOATING SELECTION ACTION BAR ═══ */}
+                {selectedItem && (
+                    <div className="floating-action-bar anim-scale-in">
+                        <div className="fab-item-label">
+                            <span className="fab-icon">{ASSET_ICONS[selectedItem.type] || '📦'}</span>
+                            <span className="fab-name">{selectedItem.name}</span>
+                        </div>
+
+                        <div className="fab-divider" />
+
+                        {/* Transform mode switches */}
+                        <button className={`fab-btn ${transformMode === 'translate' ? 'active' : ''}`} onClick={() => setTransformMode('translate')} title="Move (G)">
+                            <Move size={16} /><span>Move</span>
+                        </button>
+                        <button className={`fab-btn ${transformMode === 'rotate' ? 'active' : ''}`} onClick={() => setTransformMode('rotate')} title="Rotate (R)">
+                            <RotateCcw size={16} /><span>Rotate</span>
+                        </button>
+                        <button className={`fab-btn ${transformMode === 'scale' ? 'active' : ''}`} onClick={() => setTransformMode('scale')} title="Scale (S)">
+                            <Maximize size={16} /><span>Scale</span>
+                        </button>
+
+                        <div className="fab-divider" />
+
+                        {/* Quick actions */}
+                        <button className="fab-btn" onClick={() => { pushUndo(); flipItem(selectedItemId, 'y'); }} title="Flip (F)">
+                            <FlipHorizontal size={16} /><span>Flip</span>
+                        </button>
+                        <button className="fab-btn" onClick={duplicateSelected} title="Duplicate (⌘D)">
+                            <Copy size={16} /><span>Copy</span>
+                        </button>
+                        <button className="fab-btn" onClick={captureScreenshot} title="Screenshot">
+                            <Camera size={16} /><span>Capture</span>
+                        </button>
+
+                        <div className="fab-divider" />
+
+                        <button className="fab-btn fab-danger" onClick={deleteSelected} title="Delete (Del)">
+                            <Trash2 size={16} /><span>Delete</span>
+                        </button>
+                    </div>
+                )}
 
                 <StudioScene items={items} selectedItemId={selectedItemId} transformMode={transformMode}
                     onSelect={selectItem} onChange={updateItem} onClearSelection={clearSelection}
-                    showGrid={showGrid} is2D={is2D} roomDims={roomDims} />
+                    showGrid={showGrid} is2D={is2D} roomDims={roomDims} snapEnabled={snapEnabled} />
             </div>
 
             {/* ═══ SIDEBAR ═══ */}
             <aside className="studio-sidebar">
-                {/* Header */}
                 <div className="sidebar-header">
                     <h3>Studio</h3>
-                    <p className="sidebar-room-name">{room ? room.title || room.name || 'Untitled Room' : 'No room linked'}</p>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        <Link to="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
-                        {roomId && <Link to={`/room/${roomId}`} className="btn btn-ghost btn-sm">Room</Link>}
+                    <p className="sidebar-room-name">{room ? room.title || room.name || 'Untitled Room' : 'Project Workspace'}</p>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                        <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ flex: 1 }}>Dashboard</Link>
+                        {roomId && <Link to={`/room/${roomId}`} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>Room Page</Link>}
                     </div>
                 </div>
 
-                {/* Tab Navigation */}
                 <div className="sidebar-tabs">
                     <button className={`sidebar-tab ${sidebarTab === 'catalog' ? 'active' : ''}`} onClick={() => setSidebarTab('catalog')}>
                         <Sofa size={14} /> Catalog
                     </button>
                     <button className={`sidebar-tab ${sidebarTab === 'properties' ? 'active' : ''}`} onClick={() => setSidebarTab('properties')}>
-                        <Palette size={14} /> Properties
+                        <Palette size={14} /> Props
                     </button>
                     <button className={`sidebar-tab ${sidebarTab === 'layouts' ? 'active' : ''}`} onClick={() => setSidebarTab('layouts')}>
-                        <Lamp size={14} /> Layouts
+                        <Lamp size={14} /> Saved
                     </button>
                 </div>
 
-                {/* Tab Content */}
                 <div className="sidebar-tab-content">
-                    {/* ── Catalog Tab ── */}
                     {sidebarTab === 'catalog' && (
-                        <>
+                        <div className="anim-fade-up">
                             {loading ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><div className="spinner" /></div>
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
                             ) : (
                                 <CategoryBrowser assets={assets} onAddAsset={addAssetToScene} onAddPolyModel={addPolyModelToScene} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
                             )}
-                        </>
+                        </div>
                     )}
 
-                    {/* ── Properties Tab ── */}
                     {sidebarTab === 'properties' && (
-                        <div className="properties-panel">
-                            {/* Auto Decorate */}
+                        <div className="properties-panel anim-fade-up">
                             <div className="sidebar-section">
-                                <h4>Auto Decorate</h4>
+                                <h4>Intelligence</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
                                     <select className="input" value={style} onChange={(e) => setStyle(e.target.value)}>
                                         {STYLE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
                                     </select>
-                                    <button className="btn btn-olive" onClick={runAutoDecorate} disabled={autoDecorating || !roomId}><Sparkles size={16} /></button>
+                                    <button className="btn btn-sage" onClick={runAutoDecorate} disabled={autoDecorating || !roomId} title="Auto Decorate"><Sparkles size={16} /></button>
                                 </div>
-                                <button className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={clearScene}>Clear Scene</button>
+                                <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, width: '100%', borderColor: 'var(--c-border)' }} onClick={clearScene}>Reset Scene</button>
                             </div>
 
-                            {/* Room Dimensions */}
                             <div className="sidebar-section">
-                                <h4>Room Dimensions</h4>
+                                <h4>Environment</h4>
                                 <div className="dimension-control">
                                     <label>Width: <strong>{roomDims.width}m</strong></label>
                                     <input type="range" min="4" max="16" step="0.5" value={roomDims.width}
@@ -1048,20 +1187,27 @@ export default function StudioPage() {
                                 </div>
                             </div>
 
-                            {/* Selected Item Properties */}
                             <div className="sidebar-section">
-                                <h4>Selected Item</h4>
+                                <h4>Inspector</h4>
                                 {!selectedItem ? (
-                                    <p className="sidebar-muted">Click an item in the scene to select it.</p>
+                                    <div className="empty-state-mini" style={{ textAlign: 'center', padding: '20px 0', opacity: 0.5 }}>
+                                        <Eye size={24} style={{ marginBottom: 8 }} />
+                                        <p style={{ fontSize: '0.75rem' }}>Select an object to inspect properties</p>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <p className="selected-item-name">
-                                            {ASSET_ICONS[selectedItem.type] || '📦'} {selectedItem.name}
-                                            <span className="selected-item-type">{selectedItem.type}</span>
-                                        </p>
+                                    <div className="selected-item-props anim-scale-in">
+                                        {/* Item header */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                                            <div style={{ fontSize: '1.5rem' }}>{ASSET_ICONS[selectedItem.type] || '📦'}</div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{selectedItem.name}</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--c-text-muted)', textTransform: 'uppercase' }}>{selectedItem.type}</div>
+                                            </div>
+                                        </div>
 
-                                        <div className="property-field">
-                                            <label>Material</label>
+                                        {/* Material selector */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Material</label>
                                             <select className="input" value={selectedItem.material}
                                                 onChange={(e) => {
                                                     const material = e.target.value;
@@ -1073,60 +1219,204 @@ export default function StudioPage() {
                                             </select>
                                         </div>
 
-                                        <div className="property-field">
-                                            <label>Color</label>
-                                            <div className="color-picker-row">
+                                        {/* Color picker */}
+                                        <div className="property-field" style={{ marginBottom: 16 }}>
+                                            <label className="prop-label">Finish / Color</label>
+                                            <div className="color-picker-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                 {COLOR_CHOICES.map(color => (
                                                     <button key={color} className={`color-dot ${selectedItem.color === color ? 'active' : ''}`}
-                                                        style={{ background: color }} title={color}
+                                                        style={{
+                                                            width: 24, height: 24, borderRadius: '50%',
+                                                            background: color, border: '2px solid transparent',
+                                                            cursor: 'pointer', transition: 'all 0.2s',
+                                                            borderColor: selectedItem.color === color ? 'var(--c-sage)' : 'transparent',
+                                                            boxShadow: selectedItem.color === color ? `0 0 0 2px var(--c-sage-glass)` : 'none'
+                                                        }}
                                                         onClick={() => updateItem(selectedItem.id, { color })} />
                                                 ))}
                                             </div>
                                         </div>
-                                    </>
+
+                                        {/* ══════ POSITION (X, Y, Z) ══════ */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Position</label>
+                                            <div className="transform-row">
+                                                {['x', 'y', 'z'].map(axis => (
+                                                    <div key={axis} className="transform-input-group">
+                                                        <span className="axis-badge" data-axis={axis}>{axis.toUpperCase()}</span>
+                                                        <input type="number" className="transform-input" step="0.05" value={Number(selectedItem.position[axis] || 0).toFixed(2)}
+                                                            onChange={(e) => setItemPosition(selectedItem.id, { [axis]: parseFloat(e.target.value) || 0 })} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* D-pad nudge */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Nudge (← → ↑ ↓)</label>
+                                            <div className="nudge-grid">
+                                                <div></div>
+                                                <button className="nudge-btn" title="Forward (↑)" onClick={() => nudgeItem(selectedItemId, 'z', -0.1)}>↑</button>
+                                                <div></div>
+                                                <button className="nudge-btn" title="Left (←)" onClick={() => nudgeItem(selectedItemId, 'x', -0.1)}>←</button>
+                                                <button className="nudge-btn nudge-center" title="Drop to Floor" onClick={() => dropToFloor(selectedItemId, DEFAULT_Y[selectedItem?.type] || 0.3)}>⌂</button>
+                                                <button className="nudge-btn" title="Right (→)" onClick={() => nudgeItem(selectedItemId, 'x', 0.1)}>→</button>
+                                                <div></div>
+                                                <button className="nudge-btn" title="Back (↓)" onClick={() => nudgeItem(selectedItemId, 'z', 0.1)}>↓</button>
+                                                <div></div>
+                                            </div>
+                                        </div>
+
+                                        {/* ══════ ROTATION (X, Y, Z) ══════ */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Rotation (degrees)</label>
+                                            <div className="transform-row">
+                                                {['x', 'y', 'z'].map(axis => (
+                                                    <div key={axis} className="transform-input-group">
+                                                        <span className="axis-badge" data-axis={axis}>{axis.toUpperCase()}</span>
+                                                        <input type="number" className="transform-input" step="5" value={Math.round((selectedItem.rotation[axis] || 0) * 180 / Math.PI)}
+                                                            onChange={(e) => setItemRotation(selectedItem.id, { [axis]: (parseFloat(e.target.value) || 0) * Math.PI / 180 })} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Rotation quick actions */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Quick Rotate</label>
+                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'y', -Math.PI / 12)} title="−15° Y">−15°</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'y', Math.PI / 12)} title="+15° Y">+15°</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'y', -Math.PI / 4)} title="−45° Y">−45°</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'y', Math.PI / 4)} title="+45° Y">+45°</button>
+                                                <button className="mini-action-btn" onClick={() => { pushUndo(); rotateItem(selectedItemId, 'y', -Math.PI / 2); }} title="−90° Y">−90°</button>
+                                                <button className="mini-action-btn" onClick={() => { pushUndo(); rotateItem(selectedItemId, 'y', Math.PI / 2); }} title="+90° Y">+90°</button>
+                                                <button className="mini-action-btn accent" onClick={() => { pushUndo(); flipItem(selectedItemId, 'y'); }} title="Flip 180°">Flip</button>
+                                                <button className="mini-action-btn accent" onClick={() => { pushUndo(); resetRotation(selectedItemId); }} title="Reset">Reset</button>
+                                            </div>
+                                        </div>
+
+                                        {/* Tilt controls (X rotation) */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Tilt (T/B keys)</label>
+                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'x', -Math.PI / 12)} title="Tilt Forward">↗ Fwd</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'x', Math.PI / 12)} title="Tilt Back">↙ Back</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'z', -Math.PI / 12)} title="Roll Left">⟲ Roll L</button>
+                                                <button className="mini-action-btn" onClick={() => rotateItem(selectedItemId, 'z', Math.PI / 12)} title="Roll Right">⟳ Roll R</button>
+                                            </div>
+                                        </div>
+
+                                        {/* ══════ SCALE (X, Y, Z) ══════ */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">
+                                                Scale
+                                                <button className="lock-toggle" onClick={toggleUniformScale} title={uniformScale ? 'Uniform Scale ON' : 'Uniform Scale OFF'}>
+                                                    {uniformScale ? <Lock size={11} /> : <Unlock size={11} />}
+                                                </button>
+                                            </label>
+                                            <div className="transform-row">
+                                                {['x', 'y', 'z'].map(axis => (
+                                                    <div key={axis} className="transform-input-group">
+                                                        <span className="axis-badge" data-axis={axis}>{axis.toUpperCase()}</span>
+                                                        <input type="number" className="transform-input" step="0.05" min="0.05" value={Number(selectedItem.scale[axis] || 1).toFixed(2)}
+                                                            onChange={(e) => {
+                                                                const val = Math.max(0.05, parseFloat(e.target.value) || 0.05);
+                                                                setItemScale(selectedItem.id, { [axis]: val }, uniformScale);
+                                                            }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* ══════ ELEVATION (Y slider) ══════ */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Elevation: <strong>{(selectedItem.position.y || 0).toFixed(2)}m</strong></label>
+                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                <button className="mini-action-btn" onClick={() => elevateItem(selectedItemId, -0.05)}>−</button>
+                                                <input type="range" min="0" max="4" step="0.02" style={{ flex: 1, accentColor: 'var(--c-sage)' }}
+                                                    value={selectedItem.position.y || 0}
+                                                    onChange={(e) => setItemPosition(selectedItem.id, { y: parseFloat(e.target.value) })} />
+                                                <button className="mini-action-btn" onClick={() => elevateItem(selectedItemId, 0.05)}>+</button>
+                                            </div>
+                                        </div>
+
+                                        {/* ══════ ALIGN TO WALL ══════ */}
+                                        <div className="property-field" style={{ marginBottom: 12 }}>
+                                            <label className="prop-label">Align / Snap</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+                                                <button className="mini-action-btn" onClick={() => alignToWall(selectedItemId, 'left', roomDims)}>← Left</button>
+                                                <button className="mini-action-btn accent" onClick={() => alignToWall(selectedItemId, 'center', roomDims)}>Center</button>
+                                                <button className="mini-action-btn" onClick={() => alignToWall(selectedItemId, 'right', roomDims)}>Right →</button>
+                                                <button className="mini-action-btn" onClick={() => alignToWall(selectedItemId, 'back', roomDims)}>↑ Back</button>
+                                                <button className="mini-action-btn" onClick={() => dropToFloor(selectedItemId, DEFAULT_Y[selectedItem?.type] || 0.3)}>⌂ Floor</button>
+                                                <button className="mini-action-btn" onClick={() => alignToWall(selectedItemId, 'front', roomDims)}>↓ Front</button>
+                                            </div>
+                                        </div>
+
+                                        {/* Shortcuts hint */}
+                                        <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--c-darker)', borderRadius: 'var(--r-md)', fontSize: '0.62rem', color: 'var(--c-text-muted)', lineHeight: 1.6 }}>
+                                            <strong style={{ color: 'var(--c-text-secondary)' }}>Shortcuts:</strong><br/>
+                                            <b>G</b> Move · <b>R</b> Rotate · <b>S</b> Scale · <b>Del</b> Delete<br/>
+                                            <b>← → ↑ ↓</b> Nudge · <b>Q/E</b> Rotate Y · <b>T/B</b> Tilt<br/>
+                                            <b>[ ]</b> Snap 90° · <b>F</b> Flip · <b>N</b> Snap · <b>0</b> Reset<br/>
+                                            <b>PgUp/Dn</b> Elevate · <b>Home</b> Floor · <b>⌘Z/Y</b> Undo
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* ── Layouts Tab ── */}
                     {sidebarTab === 'layouts' && (
-                        <div className="layouts-panel">
+                        <div className="layouts-panel anim-fade-up">
                             <div className="sidebar-section">
-                                <h4>Saved Layouts</h4>
+                                <h4>My Designs</h4>
                                 {loadingLayouts ? (
-                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 8 }}><div className="spinner" /></div>
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><div className="spinner" /></div>
                                 ) : layouts.length === 0 ? (
                                     <p className="sidebar-muted">No saved layouts yet.</p>
                                 ) : (
-                                    <div className="layouts-list">
+                                    <div className="layouts-list" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                         {layouts.map(layout => (
-                                            <button key={layout.id} className="layout-item" onClick={() => loadSavedLayout(layout)}>
-                                                <span className="layout-icon">📐</span>
-                                                <span className="layout-name">{layout.name || 'Untitled Layout'}</span>
+                                            <button key={layout.id} className="layout-item" onClick={() => loadSavedLayout(layout)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 12, padding: 12,
+                                                    background: 'rgba(255,255,255,0.03)', border: '1px solid var(--c-border)',
+                                                    borderRadius: 'var(--r-md)', color: 'var(--c-text-secondary)',
+                                                    cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left'
+                                                }}>
+                                                <div style={{ padding: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 6 }}><Lamp size={14} /></div>
+                                                <span style={{ fontSize: '0.82rem', fontWeight: 500 }}>{layout.name || 'Untitled Design'}</span>
                                             </button>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Scene Items List */}
-                            <div className="sidebar-section">
-                                <h4>Scene Items ({items.length})</h4>
+                            <div className="sidebar-section" style={{ marginTop: 24 }}>
+                                <h4>Layer List</h4>
                                 {items.length === 0 ? (
-                                    <p className="sidebar-muted">No items in scene. Add from Catalog.</p>
+                                    <p className="sidebar-muted" style={{ fontSize: '0.75rem' }}>Scene is empty.</p>
                                 ) : (
-                                    <div className="scene-items-list">
+                                    <div className="scene-items-list" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         {items.map(item => (
-                                            <button key={item.id}
+                                            <div key={item.id}
                                                 className={`scene-item-row ${selectedItemId === item.id ? 'active' : ''}`}
-                                                onClick={() => selectItem(item.id)}>
-                                                <span>{ASSET_ICONS[item.type] || '📦'}</span>
-                                                <span className="scene-item-name">{item.name}</span>
-                                                <button className="scene-item-delete" onClick={(e) => { e.stopPropagation(); removeItem(item.id); }}>
+                                                onClick={() => selectItem(item.id)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                                                    background: selectedItemId === item.id ? 'var(--c-sage-glass)' : 'transparent',
+                                                    borderRadius: 'var(--r-md)', cursor: 'pointer', transition: 'all 0.2s',
+                                                    border: '1px solid', borderColor: selectedItemId === item.id ? 'var(--c-sage)' : 'transparent'
+                                                }}>
+                                                <span style={{ fontSize: '1.1rem' }}>{ASSET_ICONS[item.type] || '📦'}</span>
+                                                <span className="scene-item-name" style={{ flex: 1, fontSize: '0.8rem', color: selectedItemId === item.id ? 'var(--c-sage-light)' : 'var(--c-text-secondary)' }}>{item.name}</span>
+                                                <button className="scene-item-delete" onClick={(e) => { e.stopPropagation(); removeItem(item.id); }}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--c-text-muted)', cursor: 'pointer', padding: 4 }}>
                                                     <Trash2 size={12} />
                                                 </button>
-                                            </button>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
