@@ -6,5 +6,8 @@ uploads/*
 !uploads/.gitkeep
 generated/*
 !generated/.gitkeep
+exports/*
+!exports/.gitkeep
+storage/
 .DS_Store
 study_materials/

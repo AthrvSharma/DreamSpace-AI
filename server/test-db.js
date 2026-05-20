@@ -1,24 +1,29 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import sequelize from './src/config/database.js';
+import sequelize, { ensureDatabase, dbConfig } from './src/config/database.js';
 import { User, Room, Redesign, Layout, Asset } from './src/models/index.js';
+import { seedAssets } from './src/config/seed.js';
 
 async function testConnection() {
   try {
-    console.log('🔍 Testing MySQL Connection...\n');
+    console.log('🔍 Testing TiDB/MySQL connection...\n');
+    await ensureDatabase();
     
     // Test connection
     await sequelize.authenticate();
-    console.log('✅ MySQL connection successful!');
-    console.log(`   Host: ${process.env.DB_HOST}`);
-    console.log(`   Port: ${process.env.DB_PORT}`);
-    console.log(`   Database: ${process.env.DB_NAME}`);
-    console.log(`   User: ${process.env.DB_USER}\n`);
+    console.log('✅ Database connection successful!');
+    console.log(`   Host: ${dbConfig.host}`);
+    console.log(`   Port: ${dbConfig.port}`);
+    console.log(`   Database: ${dbConfig.database}`);
+    console.log(`   User: ${dbConfig.username}`);
+    console.log(`   TLS: ${dbConfig.sslEnabled ? 'enabled' : 'disabled'}\n`);
     
     // Sync database
     console.log('🔄 Syncing database tables...');
-    await sequelize.sync({ alter: true });
+    const syncOptions = process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {};
+    await sequelize.sync(syncOptions);
     console.log('✅ Database tables synced!\n');
+    await seedAssets();
     
     // Count records
     const userCount = await User.count();
@@ -38,9 +43,9 @@ async function testConnection() {
     console.error('❌ Database Connection Error:');
     console.error(`   ${err.message}\n`);
     console.error('💡 Troubleshooting:');
-    console.error('   1. Ensure MySQL server is running');
-    console.error('   2. Check .env file credentials');
-    console.error('   3. Verify database exists (CREATE DATABASE dreamspace;)\n');
+    console.error('   1. Check TiDB Cloud credentials in .env');
+    console.error('   2. Ensure TLS is enabled for TiDB Cloud');
+    console.error('   3. Verify your IP address is allowed in TiDB Cloud network settings\n');
     process.exit(1);
   }
 }

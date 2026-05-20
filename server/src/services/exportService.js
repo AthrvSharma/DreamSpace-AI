@@ -1,14 +1,9 @@
 import PDFDocument from 'pdfkit';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import { ensureStorageDirs, exportDir, resolvePublicFilePath } from '../config/storage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const exportDir = path.join(__dirname, '..', '..', 'exports');
-
-if (!fs.existsSync(exportDir)) fs.mkdirSync(exportDir, { recursive: true });
+ensureStorageDirs();
 
 /**
  * Generate a PDF Design Proposal for a room.
@@ -71,7 +66,7 @@ export async function generateDesignProposalPDF(room, redesigns, layout) {
         doc.fillColor(dark).fontSize(16).font('Helvetica-Bold').text('Original Room');
         doc.moveDown(0.8);
 
-        const originalImgPath = path.join(__dirname, '..', '..', room.originalImageUrl?.replace(/^\//, ''));
+        const originalImgPath = resolvePublicFilePath(room.originalImageUrl);
         if (fs.existsSync(originalImgPath)) {
             doc.image(originalImgPath, 50, doc.y, { width: 240, height: 160, fit: 'cover' });
         } else {
@@ -99,7 +94,7 @@ export async function generateDesignProposalPDF(room, redesigns, layout) {
                 }
                 doc.moveDown(0.3);
 
-                const imgPath = path.join(__dirname, '..', '..', redesign.imageUrl?.replace(/^\//, ''));
+                const imgPath = resolvePublicFilePath(redesign.imageUrl);
                 if (fs.existsSync(imgPath)) {
                     try {
                         doc.image(imgPath, 50, doc.y, { width: 200, height: 133, fit: 'cover' });

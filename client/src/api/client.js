@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 async function request(url, options = {}) {
     const token = localStorage.getItem('dreamspace_token');
@@ -9,7 +9,8 @@ async function request(url, options = {}) {
     }
 
     const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
-    const data = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await res.json() : {};
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
 }
@@ -78,7 +79,7 @@ export const paymentAPI = {
 // ── Export ──
 export const exportAPI = {
     generateProposal: (roomId) => request(`/export/proposal/${roomId}`),
-    downloadUrl: (filename) => `/api/export/download/${filename}`,
+    downloadUrl: (filename) => `${API_BASE}/export/download/${filename}`,
 };
 
 // ── Notifications ──

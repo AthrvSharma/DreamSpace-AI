@@ -1,18 +1,14 @@
 import { Router } from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { Op } from 'sequelize';
 import { Room, Redesign, Layout } from '../models/index.js';
 import { authenticate } from '../middleware/auth.js';
+import { ensureStorageDirs, exportDir, safeJoin } from '../config/storage.js';
 import { generateDesignProposalPDF } from '../services/exportService.js';
 
 const router = Router();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const exportDir = path.join(__dirname, '..', '..', 'exports');
-
-if (!fs.existsSync(exportDir)) fs.mkdirSync(exportDir, { recursive: true });
+ensureStorageDirs();
 
 // ── Generate PDF Design Proposal ──
 router.get('/proposal/:roomId', authenticate, async (req, res) => {
@@ -40,13 +36,13 @@ router.get('/proposal/:roomId', authenticate, async (req, res) => {
 // ── Download PDF ──
 router.get('/download/:filename', authenticate, async (req, res) => {
     try {
-        const filePath = path.join(exportDir, req.params.filename);
+        const filePath = safeJoin(exportDir, req.params.filename);
         if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found.' });
 
         // Verify user owns this export (check filename contains a room they own)
         const roomId = req.params.filename.split('_')[1];
         if (roomId) {
-            const room = await Room.findOne({ where: { id: { [require('sequelize').Op.startsWith]: roomId }, userId: req.user.id } });
+            const room = await Room.findOne({ where: { id: { [Op.startsWith]: roomId }, userId: req.user.id } });
             if (!room) return res.status(403).json({ error: 'Access denied.' });
         }
 

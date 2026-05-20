@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { serverConfig } from '../config/env.js';
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -12,16 +13,34 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+const mailFrom = process.env.MAIL_FROM || '"DreamSpace AI" <no-reply@dreamspace.ai>';
+
+function buildAppUrl(pathname) {
+    if (!serverConfig.frontendUrl) {
+        throw new Error('FRONTEND_URL is required to generate email links.');
+    }
+    return new URL(pathname, serverConfig.frontendUrl).toString();
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
 export const sendPaymentConfirmation = async (userEmail, userName, amount, credits) => {
     try {
         const mailOptions = {
-            from: `"DreamSpace AI" <${process.env.MAIL_FROM || 'no-reply@dreamspace.ai'}>`,
+            from: mailFrom,
             to: userEmail,
             subject: 'Payment Confirmation - DreamSpace AI',
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                     <h2 style="color: #6B7F5E;">Thank You for Your Purchase!</h2>
-                    <p>Hi ${userName},</p>
+                    <p>Hi ${escapeHtml(userName)},</p>
                     <p>We've successfully received your payment of <strong>₹${amount}</strong>.</p>
                     <p>Your account has been credited with <strong>${credits} credits</strong>.</p>
                     <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -45,17 +64,22 @@ export const sendPaymentConfirmation = async (userEmail, userName, amount, credi
 };
 
 export const sendVerificationEmail = async (userEmail, userName, token) => {
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    let verifyUrl;
+    try {
+        verifyUrl = buildAppUrl(`/verify-email?token=${encodeURIComponent(token)}`);
+    } catch (err) {
+        console.error('❌ Verification email failed:', err.message);
+        return;
+    }
 
     const mailOptions = {
-        from: `"DreamSpace AI" <${process.env.MAIL_FROM || 'no-reply@dreamspace.ai'}>`,
+        from: mailFrom,
         to: userEmail,
         subject: 'Verify Your Email - DreamSpace AI',
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                 <h2 style="color: #6B7F5E;">Welcome to DreamSpace AI! 🎨</h2>
-                <p>Hi ${userName},</p>
+                <p>Hi ${escapeHtml(userName)},</p>
                 <p>Please verify your email address to get started:</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${verifyUrl}" style="background: #6B7F5E; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
@@ -73,17 +97,22 @@ export const sendVerificationEmail = async (userEmail, userName, token) => {
 };
 
 export const sendPasswordResetEmail = async (userEmail, userName, token) => {
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    let resetUrl;
+    try {
+        resetUrl = buildAppUrl(`/reset-password?token=${encodeURIComponent(token)}`);
+    } catch (err) {
+        console.error('❌ Password reset email failed:', err.message);
+        return;
+    }
 
     const mailOptions = {
-        from: `"DreamSpace AI" <${process.env.MAIL_FROM || 'no-reply@dreamspace.ai'}>`,
+        from: mailFrom,
         to: userEmail,
         subject: 'Reset Your Password - DreamSpace AI',
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                 <h2 style="color: #6B7F5E;">Password Reset Request</h2>
-                <p>Hi ${userName},</p>
+                <p>Hi ${escapeHtml(userName)},</p>
                 <p>We received a request to reset your password. Click the button below to set a new one:</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${resetUrl}" style="background: #6B7F5E; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
@@ -101,7 +130,7 @@ export const sendPasswordResetEmail = async (userEmail, userName, token) => {
 
 export const sendContactNotification = async ({ name, email, subject, message }) => {
     const mailOptions = {
-        from: `"DreamSpace AI Contact" <${process.env.MAIL_FROM || 'no-reply@dreamspace.ai'}>`,
+        from: mailFrom,
         to: process.env.CONTACT_EMAIL || process.env.MAIL_USER || 'support@dreamspace.ai',
         replyTo: email,
         subject: subject ? `[Contact] ${subject}` : '[Contact] New message from website',
@@ -109,15 +138,15 @@ export const sendContactNotification = async ({ name, email, subject, message })
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px;">
                 <h2 style="color: #6B7F5E;">New Contact Message</h2>
                 <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 16px 0;">
-                    <p style="margin: 0;"><strong>Name:</strong> ${name}</p>
-                    <p style="margin: 4px 0;"><strong>Email:</strong> ${email}</p>
-                    <p style="margin: 4px 0;"><strong>Subject:</strong> ${subject || 'N/A'}</p>
+                    <p style="margin: 0;"><strong>Name:</strong> ${escapeHtml(name)}</p>
+                    <p style="margin: 4px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
+                    <p style="margin: 4px 0;"><strong>Subject:</strong> ${escapeHtml(subject || 'N/A')}</p>
                 </div>
                 <div style="padding: 16px; border: 1px solid #eee; border-radius: 8px;">
-                    <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+                    <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(message)}</p>
                 </div>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="font-size: 12px; color: #777;">Reply directly to ${email} to respond.</p>
+                <p style="font-size: 12px; color: #777;">Reply directly to ${escapeHtml(email)} to respond.</p>
             </div>
         `,
     };

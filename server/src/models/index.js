@@ -119,10 +119,6 @@ CreditHistory.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(ChatMessage, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ChatMessage.belongsTo(User, { foreignKey: 'userId' });
 
-
-User.hasMany(ChatMessage, { foreignKey: 'userId', onDelete: 'CASCADE' });
-ChatMessage.belongsTo(User, { foreignKey: 'userId' });
-
 Room.hasMany(ChatMessage, { foreignKey: 'roomId', onDelete: 'SET NULL' });
 ChatMessage.belongsTo(Room, { foreignKey: 'roomId' });
 

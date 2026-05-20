@@ -11,10 +11,21 @@ dotenv.config();
 
 const router = Router();
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock_id',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_secret',
-});
+const razorpay = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
+    ? new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    })
+    : null;
+
+function getRazorpayClient() {
+    if (!razorpay) {
+        const error = new Error('Payment gateway is not configured.');
+        error.statusCode = 503;
+        throw error;
+    }
+    return razorpay;
+}
 
 const CREDIT_PACKAGES = {
     starter: { amount: 199, credits: 20, name: 'Starter Pack' },
@@ -31,6 +42,7 @@ router.post('/create-order', authenticate, async (req, res) => {
 
         const user = await User.findByPk(req.user.id);
         if (!user) return res.status(404).json({ error: 'User not found.' });
+        const razorpayClient = getRazorpayClient();
 
         const receipt = `rcpt_${user.id.slice(0, 8)}_${Date.now()}`;
         const options = {
@@ -40,7 +52,7 @@ router.post('/create-order', authenticate, async (req, res) => {
             notes: { packageId, userId: user.id, credits: pack.credits },
         };
 
-        const order = await razorpay.orders.create(options);
+        const order = await razorpayClient.orders.create(options);
 
         await Order.create({
             userId: user.id,
@@ -52,10 +64,10 @@ router.post('/create-order', authenticate, async (req, res) => {
             receipt,
         });
 
-        res.json({ order, key_id: razorpay.key_id });
+        res.json({ order, key_id: process.env.RAZORPAY_KEY_ID });
     } catch (err) {
         console.error('Create order error:', err);
-        res.status(500).json({ error: 'Failed to create payment order.' });
+        res.status(err.statusCode || 500).json({ error: err.message || 'Failed to create payment order.' });
     }
 });
 
@@ -63,9 +75,10 @@ router.post('/create-order', authenticate, async (req, res) => {
 router.post('/verify', authenticate, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, packageId } = req.body;
+        getRazorpayClient();
 
         const generated_signature = crypto
-            .createHmac('sha256', razorpay.key_secret)
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
             .update(razorpay_order_id + '|' + razorpay_payment_id)
             .digest('hex');
 
@@ -117,7 +130,7 @@ router.post('/verify', authenticate, async (req, res) => {
         });
     } catch (err) {
         console.error('Payment verification error:', err);
-        res.status(500).json({ error: 'Failed to verify payment.' });
+        res.status(err.statusCode || 500).json({ error: err.message || 'Failed to verify payment.' });
     }
 });
 
@@ -127,7 +140,7 @@ router.post('/webhook', async (req, res) => {
         const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
         if (!secret) return res.status(503).json({ error: 'Webhook not configured.' });
 
-        const body = JSON.stringify(req.body);
+        const body = req.rawBody || JSON.stringify(req.body);
         const signature = req.headers['x-razorpay-signature'];
         const expectedSignature = crypto.createHmac('sha256', secret).update(body).digest('hex');
 

@@ -1,23 +1,11 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { validate, chatSchema, generateImageSchema } from '../middleware/validate.js';
-import { GoogleGenAI } from '@google/genai';
 import Groq from 'groq-sdk';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import { Redesign, Room, ChatMessage, CreditHistory } from '../models/index.js';
 import { generateRedesign } from '../services/aiService.js';
 
 const router = Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const generatedDir = path.join(__dirname, '..', '..', 'generated');
-
-if (!fs.existsSync(generatedDir)) {
-    fs.mkdirSync(generatedDir, { recursive: true });
-}
 
 const getGroqClient = () => {
     const apiKey = process.env.GROQ_API_KEY;

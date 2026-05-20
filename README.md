@@ -25,7 +25,7 @@
   <a href="#-tech-stack"><img src="https://img.shields.io/badge/Three.js-3D%20Studio-000000?style=for-the-badge&logo=three.js&logoColor=white" /></a>
   <a href="#-tech-stack"><img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" /></a>
   <a href="#-ai-engine"><img src="https://img.shields.io/badge/AI-Stable%20Diffusion%20XL-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white" /></a>
-  <a href="#-tech-stack"><img src="https://img.shields.io/badge/SQLite-Sequelize-003B57?style=for-the-badge&logo=sqlite&logoColor=white" /></a>
+  <a href="#-tech-stack"><img src="https://img.shields.io/badge/TiDB%20Cloud-Sequelize-003B57?style=for-the-badge&logo=mysql&logoColor=white" /></a>
 
   <br/><br/>
 
@@ -208,10 +208,10 @@
 
 | Technology | Purpose | Version |
 |:---:|:---|:---:|
-| <img width="20" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" /> **Node.js** | JavaScript runtime | 18+ |
+| <img width="20" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" /> **Node.js** | JavaScript runtime | 20.11+ |
 | <img width="20" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" /> **Express** | Web framework & REST API | 4.x |
 | 🗄️ **Sequelize** | ORM for database operations | 6.x |
-| <img width="20" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" /> **SQLite** | File-based relational database | 3.x |
+| <img width="20" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg" /> **TiDB Cloud** | Production MySQL-compatible database | Cloud |
 | 🔑 **JWT** | Authentication tokens | latest |
 | 🖼️ **Sharp** | Image processing (fallback) | latest |
 | 📁 **Multer** | File upload handling | latest |
@@ -238,8 +238,9 @@
 ### Prerequisites
 
 ```
-✓ Node.js 18+ installed
+✓ Node.js 20.11+ installed
 ✓ npm package manager
+✓ TiDB Cloud database credentials
 ✓ (Optional) Hugging Face API key for AI features
 ```
 
@@ -250,26 +251,27 @@
 git clone https://github.com/your-username/RoomDecor.git
 cd RoomDecor
 
-# 2️⃣ Install server dependencies
-cd server
-npm install
-
-# 3️⃣ Install client dependencies
-cd ../client
-npm install
+# 2️⃣ Install all dependencies
+npm run install:all
 ```
 
 ### Configuration
 
-Create `server/.env`:
+Create `server/.env` from `server/.env.example` and set your TiDB Cloud, JWT, provider, and email values:
 
 ```env
 PORT=5000
 JWT_SECRET=your_super_secret_key_here
 JWT_EXPIRES_IN=7d
 
-# 🤗 Hugging Face AI (free tier)
-# Get your key at: https://huggingface.co/settings/tokens
+TIDB_HOST=gateway01.region.provider.tidbcloud.com
+TIDB_PORT=4000
+TIDB_USER=your_cluster_prefix.root
+TIDB_PASSWORD=your_tidb_password
+TIDB_DB_NAME=roomDecor
+TIDB_ENABLE_SSL=true
+DB_SSL=true
+
 HUGGINGFACE_API_KEY=hf_your_api_key_here
 HF_MODEL=stabilityai/stable-diffusion-xl-base-1.0
 ```
@@ -279,18 +281,15 @@ HF_MODEL=stabilityai/stable-diffusion-xl-base-1.0
 ### Run the App
 
 ```bash
-# Terminal 1 — Backend (port 5000)
-cd server && npm run dev
+# Optional: create/test the TiDB database and tables
+npm run db:init
+npm run db:test
 
-# Terminal 2 — Frontend (port 5173)
-cd client && npm run dev
+# Run the full stack
+npm run dev
 ```
 
-### Open
-
-```
-🌐 http://localhost:5173
-```
+For Render production deployment, use `render.yaml` and follow `DEPLOYMENT.md`.
 
 <br/>
 

@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordSchema } from '../middleware/validate.js';
 import { verifyGoogleToken } from '../utils/firebase.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/mailer.js';
 import { notifyWelcome } from '../utils/notifications.js';
+import { signAuthToken } from '../utils/tokens.js';
 
 const router = Router();
 
@@ -32,11 +32,7 @@ router.post('/google', async (req, res) => {
             });
         }
 
-        const jwtToken = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-        );
+        const jwtToken = signAuthToken(user);
         
         res.status(200).json({
             token: jwtToken,
@@ -64,11 +60,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         sendVerificationEmail(email, name, verifyToken);
         notifyWelcome(user.id, name);
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-        );
+        const token = signAuthToken(user);
         res.status(201).json({
             token,
             user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan, credits: user.credits, isEmailVerified: false },
@@ -90,11 +82,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return res.status(401).json({ error: 'Invalid credentials.' });
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-        );
+        const token = signAuthToken(user);
         res.json({
             token,
             user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan, credits: user.credits, isEmailVerified: user.isEmailVerified },

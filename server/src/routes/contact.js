@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { User } from '../models/index.js';
 import { sendContactNotification } from '../utils/mailer.js';
 import { validate } from '../middleware/validate.js';
+import { verifyAuthToken } from '../utils/tokens.js';
 import Joi from 'joi';
 
 const router = Router();
@@ -23,8 +23,7 @@ router.post('/', validate(contactSchema), async (req, res) => {
         if (authHeader) {
             try {
                 const token = authHeader.split(' ')[1];
-                const jwt = (await import('jsonwebtoken')).default;
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                verifyAuthToken(token);
                 // Don't require match, just log
             } catch {}
         }

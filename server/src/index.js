@@ -2,14 +2,15 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
 import sequelize from './models/index.js';
+import { ensureDatabase } from './config/database.js';
+import { ensureStorageDirs, uploadDir, generatedDir, exportDir } from './config/storage.js';
+import { isProduction, serverConfig, validateRuntimeEnv } from './config/env.js';
 import { seedAssets } from './config/seed.js';
 import authRoutes from './routes/auth.js';
 import roomRoutes from './routes/rooms.js';
@@ -31,12 +32,31 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = serverConfig.port;
+
+if (serverConfig.trustProxy) {
+    app.set('trust proxy', 1);
+}
+
+const allowedOrigins = serverConfig.corsOrigins.length > 0
+    ? serverConfig.corsOrigins
+    : (serverConfig.frontendUrl ? [serverConfig.frontendUrl] : []);
+
+const corsOrigin = (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+};
+
+const socketCorsOrigin = allowedOrigins.length === 0
+    ? true
+    : (allowedOrigins.includes('*') ? '*' : allowedOrigins);
 
 // ── Socket.io Setup ──
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:3000'],
+        origin: socketCorsOrigin,
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -73,30 +93,38 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
-// Ensure directories exist
-const dirs = ['uploads', 'generated', 'exports'].map(d => path.join(__dirname, '..', d));
-dirs.forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+ensureStorageDirs();
 
 // Middleware
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-const corsOriginEnv = process.env.CORS_ORIGIN;
-const allowedOrigins = corsOriginEnv 
-    ? (corsOriginEnv.includes(',') ? corsOriginEnv.split(',') : corsOriginEnv)
-    : ['http://localhost:5173', 'http://localhost:3000'];
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(cors({
-    origin: allowedOrigins,
+    origin: corsOrigin,
     credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+    limit: serverConfig.jsonBodyLimit,
+    verify: (req, res, buf) => {
+        if (req.originalUrl === '/api/payment/webhook') {
+            req.rawBody = buf.toString('utf8');
+        }
+    },
+}));
 
 // Per-route rate limiting
 app.use('/api/auth/', authLimiter);
 app.use('/api/', generalLimiter);
 
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-app.use('/generated', express.static(path.join(__dirname, '..', 'generated')));
-app.use('/exports', express.static(path.join(__dirname, '..', 'exports')));
+const staticOptions = {
+    maxAge: isProduction ? '7d' : 0,
+    immutable: isProduction,
+};
+app.use('/uploads', express.static(uploadDir, staticOptions));
+app.use('/generated', express.static(generatedDir, staticOptions));
+app.use('/exports', express.static(exportDir, staticOptions));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -117,6 +145,8 @@ app.use('/api', generalRoutes);
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
+        environment: serverConfig.nodeEnv,
+        database: 'configured',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         version: '2.0.0',
@@ -124,7 +154,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve static client files in production
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
     const clientBuildPath = path.join(__dirname, '..', '..', 'client', 'dist');
     app.use(express.static(clientBuildPath));
     app.get('*', (req, res, next) => {
@@ -138,18 +168,30 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ error: err.message || 'Internal server error.' });
+    const status = err.statusCode || err.status || 500;
+    const message = isProduction && status >= 500
+        ? 'Internal server error.'
+        : (err.message || 'Internal server error.');
+    res.status(status).json({ error: message });
 });
 
 // Start
 async function start() {
     try {
-        await sequelize.sync({ alter: true });
+        validateRuntimeEnv();
+        await ensureDatabase();
+        await sequelize.authenticate();
+        const syncOptions = process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {};
+        if (process.env.DB_SYNC_ON_START !== 'false') {
+            await sequelize.sync(syncOptions);
+        }
         console.log('✅ Database synced');
-        await seedAssets();
-        server.listen(PORT, () => {
-            console.log(`🚀 DreamSpace AI v2.0 running on http://localhost:${PORT}`);
-            console.log(`📡 Socket.io enabled · ${dirs.length} static directories`);
+        if (process.env.DB_SEED_ON_START !== 'false') {
+            await seedAssets();
+        }
+        server.listen(PORT, serverConfig.host, () => {
+            console.log(`🚀 DreamSpace AI v2.0 listening on port ${PORT}`);
+            console.log(`📡 Socket.io enabled · static storage root: ${path.dirname(uploadDir)}`);
         });
     } catch (err) {
         console.error('❌ Failed to start:', err);

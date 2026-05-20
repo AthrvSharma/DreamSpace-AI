@@ -1,15 +1,11 @@
 import sharp from 'sharp';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import Replicate from 'replicate';
+import { ensureStorageDirs, generatedDir, resolvePublicFilePath } from '../config/storage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const generatedDir = path.join(__dirname, '..', '..', 'generated');
-
-if (!fs.existsSync(generatedDir)) fs.mkdirSync(generatedDir, { recursive: true });
+ensureStorageDirs();
 
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || '';
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY || '';
@@ -213,7 +209,7 @@ export async function generateRedesign(originalImagePath, style, customPrompt = 
     const config = styleConfigs[style] || styleConfigs.modern;
     const filename = `${uuidv4()}.jpg`;
     const outputPath = path.join(generatedDir, filename);
-    const sourcePath = path.join(__dirname, '..', '..', originalImagePath.replace(/^\//, ''));
+    const sourcePath = resolvePublicFilePath(originalImagePath);
     const { prompt, negative } = buildPrompt(style, customPrompt, roomType);
 
     let outputBuffer;
