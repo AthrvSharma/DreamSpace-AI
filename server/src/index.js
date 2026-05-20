@@ -99,6 +99,8 @@ ensureStorageDirs();
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,   // Required for Razorpay popup payment flow
+    crossOriginEmbedderPolicy: false,  // Required for Razorpay popup payment flow
 }));
 app.use(cors({
     origin: corsOrigin,
