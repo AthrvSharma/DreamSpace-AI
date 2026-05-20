@@ -79,8 +79,12 @@ dirs.forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+const corsOriginEnv = process.env.CORS_ORIGIN;
+const allowedOrigins = corsOriginEnv 
+    ? (corsOriginEnv.includes(',') ? corsOriginEnv.split(',') : corsOriginEnv)
+    : ['http://localhost:5173', 'http://localhost:3000'];
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -118,6 +122,18 @@ app.get('/api/health', (req, res) => {
         version: '2.0.0',
     });
 });
+
+// Serve static client files in production
+if (process.env.NODE_ENV === 'production') {
+    const clientBuildPath = path.join(__dirname, '..', '..', 'client', 'dist');
+    app.use(express.static(clientBuildPath));
+    app.get('*', (req, res, next) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/generated') && !req.path.startsWith('/exports')) {
+            return res.sendFile(path.join(clientBuildPath, 'index.html'));
+        }
+        next();
+    });
+}
 
 // Error handling
 app.use((err, req, res, next) => {
