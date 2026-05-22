@@ -91,10 +91,11 @@ router.get('/model', async (req, res) => {
         }
 
         // All retries exhausted, or server is blocked.
-        console.error('❌ GLB proxy failed after retries. Redirecting client to original URL as fallback.');
+        console.log('↪️ Proxy blocked by CDN. Redirecting client to download directly from Poly.pizza.');
         
-        // Instead of returning a JSON error (which crashes the frontend GLTF loader expecting a binary file),
-        // we redirect the browser to fetch the model directly. Poly Pizza often supports CORS.
+        // Poly.pizza's CDN blocks Render's datacenter IPs.
+        // However, it allows direct CORS requests from real browsers.
+        // So we redirect the user's browser to fetch it directly.
         return res.redirect(302, url);
     } catch (err) {
         console.error('❌ GLB proxy error:', err.message);
