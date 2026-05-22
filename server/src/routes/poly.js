@@ -35,9 +35,9 @@ router.get('/model', async (req, res) => {
             try {
                 console.log(`📦 Fetching GLB (attempt ${attempt}/${maxRetries}): ${url.substring(0, 70)}...`);
                 
-                // Use fetch with signal for timeout
+                // Increase timeout to 30s. Cloudflare is tarpitting connections from Render for 15-20s!
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+                const timeoutId = setTimeout(() => controller.abort(), 30000); 
 
                 const response = await fetch(url, { 
                     signal: controller.signal,
@@ -81,7 +81,7 @@ router.get('/model', async (req, res) => {
                 console.error(`⚠️ GLB fetch error (attempt ${attempt}/${maxRetries}): ${errorCode}`);
                 
                 if (attempt < maxRetries) {
-                    const waitTime = Math.min(1000 * attempt, 5000); // Exponential backoff
+                    const waitTime = Math.min(2000 * attempt, 5000); // Exponential backoff
                     console.log(`⏳ Waiting ${waitTime}ms before retry...`);
                     await new Promise(r => setTimeout(r, waitTime));
                     continue;
@@ -90,13 +90,9 @@ router.get('/model', async (req, res) => {
             }
         }
 
-        // All retries exhausted, or server is blocked.
-        console.log('↪️ Proxy blocked by CDN. Redirecting client to download directly from Poly.pizza.');
-        
-        // Poly.pizza's CDN blocks Render's datacenter IPs.
-        // However, it allows direct CORS requests from real browsers.
-        // So we redirect the user's browser to fetch it directly.
-        return res.redirect(302, url);
+        // All retries exhausted
+        console.error('❌ GLB proxy completely failed after all retries.');
+        res.status(502).json({ error: 'Upstream CDN timed out or blocked the request.' });
     } catch (err) {
         console.error('❌ GLB proxy error:', err.message);
         res.status(500).json({ error: 'Internal server error.', retry: false });
